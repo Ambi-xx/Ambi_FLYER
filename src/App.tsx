@@ -73,6 +73,7 @@ export default function App() {
   const [userApiKey, setUserApiKey] = useState<string>(localStorage.getItem("user_gemini_api_key") || "");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isRegenerating, setIsRegenerating] = useState(false);
+  const [showGithubModal, setShowGithubModal] = useState(false);
   
   // Generated Copywriting output
   const [activeTab, setActiveTab] = useState<"japanese" | "chinese" | "english">("japanese");
@@ -306,6 +307,167 @@ export default function App() {
     }
   };
 
+  // Helper to call Gemini directly from the browser (e.g. on GitHub Pages or custom static hosts)
+  const callGeminiDirectlyFromBrowser = async (base64Image: string, prompt: string) => {
+    const key = userApiKey;
+    if (!key) {
+      throw new Error("静的サイト環境（GitHub Pages等）で動作させる場合、画面右上の「API Key」入力欄にご自身のGemini APIキーを入力していただく必要があります。APIキーはブラウザのローカルストレージにのみ保存され、外部に送信されることはありません。");
+    }
+
+    const cleanBase64 = base64Image.includes(",")
+      ? base64Image.split(",")[1]
+      : base64Image;
+
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`;
+
+    const payload = {
+      contents: [
+        {
+          parts: [
+            {
+              inlineData: {
+                mimeType: "image/jpeg",
+                data: cleanBase64
+              }
+            },
+            {
+              text: prompt
+            }
+          ]
+        }
+      ],
+      generationConfig: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: "OBJECT",
+          properties: {
+            specs: {
+              type: "OBJECT",
+              description: "Extracted real estate property specification parameters",
+              properties: {
+                propertyName: { type: "STRING", description: "Name of the property or building" },
+                rent: { type: "STRING", description: "Rent price in Yen" },
+                managementFee: { type: "STRING", description: "Management or common area fee" },
+                deposit: { type: "STRING", description: "Security deposit / Shikikin" },
+                keyMoney: { type: "STRING", description: "Key money / Reikin" },
+                layout: { type: "STRING", description: "Property layout plan" },
+                size: { type: "STRING", description: "Occupiable area square meters" },
+                stationWalkTime: { type: "STRING", description: "Train station access and walking distance" },
+                address: { type: "STRING", description: "Physical property address" },
+                constructionYear: { type: "STRING", description: "Construction completion month/year" },
+                keyFeatures: {
+                  type: "ARRAY",
+                  items: { type: "STRING" },
+                  description: "Array of premium highlights"
+                }
+              },
+              required: [
+                "propertyName",
+                "rent",
+                "managementFee",
+                "deposit",
+                "keyMoney",
+                "layout",
+                "size",
+                "stationWalkTime",
+                "address",
+                "constructionYear",
+                "keyFeatures"
+              ]
+            },
+            japaneseCopy: { type: "STRING", description: "The complete Japanese recruitment marketing copy text" },
+            chineseCopy: { type: "STRING", description: "The complete Chinese recommendation text" },
+            englishCopy: { type: "STRING", description: "The complete global English marketing copy text" }
+          },
+          required: ["specs", "japaneseCopy", "chineseCopy", "englishCopy"]
+        }
+      }
+    };
+
+    const res = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      console.error("Gemini direct error:", errText);
+      try {
+        const errJson = JSON.parse(errText);
+        throw new Error(errJson.error?.message || `APIエラー: ${res.status}`);
+      } catch {
+        throw new Error(`Google API接続エラー: ${res.status}。APIキーが有効か、またはご自身のネットワークをご確認ください。`);
+      }
+    }
+
+    const resData = await res.json();
+    const rawText = resData.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!rawText) {
+      throw new Error("Geminiからコンテンツを抽出できませんでした。");
+    }
+
+    return JSON.parse(rawText.trim());
+  };
+
+  const callGeminiRegenDirectlyFromBrowser = async (specsData: ExtractedPropertySpecs, prompt: string) => {
+    const key = userApiKey;
+    if (!key) {
+      throw new Error("静的サイト環境（GitHub Pages等）で動作させる場合、画面右上の「API Key」項目にご自身のGemini APIキーを入力していただく必要があります。");
+    }
+
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`;
+
+    const payload = {
+      contents: [
+        {
+          parts: [
+            {
+              text: prompt
+            }
+          ]
+        }
+      ],
+      generationConfig: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: "OBJECT",
+          properties: {
+            japaneseCopy: { type: "STRING", description: "Recruitment advertisement in Japanese" },
+            chineseCopy: { type: "STRING", description: "Xiaohongshu advertisement in Chinese" },
+            englishCopy: { type: "STRING", description: "Listing advertisement in English" }
+          },
+          required: ["japaneseCopy", "chineseCopy", "englishCopy"]
+        }
+      }
+    };
+
+    const res = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      console.error("Gemini direct error:", errText);
+      try {
+        const errJson = JSON.parse(errText);
+        throw new Error(errJson.error?.message || `APIエラー: ${res.status}`);
+      } catch {
+        throw new Error(`API接続エラー: ${res.status}。APIキーがお間違いないかご確認ください。`);
+      }
+    }
+
+    const resData = await res.json();
+    const rawText = resData.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!rawText) {
+      throw new Error("Geminiから更新コピーを抽出できませんでした。");
+    }
+
+    return JSON.parse(rawText.trim());
+  };
+
   // AI copywriting analysis handler
   const handleAnalyzeAndGenerateAI = async () => {
     if (!flyerImg) {
@@ -319,24 +481,76 @@ export default function App() {
     setEnText("");
     setSpecs(null);
 
-    try {
-      const response = await fetch("/api/analyze-flyer", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          flyerImg,
-          customPrompt,
-          userApiKey: userApiKey || undefined
-        })
-      });
+    const promptText = `あなたはプロの不動産仲介エージェントであり、卓越した不動産コピーライターです。
+提供された不動産マイソク（図面）の画像を詳細に分析し、以下の情報を正確に抽出してください。
+また、抽出した情報をもとに、日本国内の募集サイト・中国のSNS（小紅書/Xiaohongshu）・英語圏向けSNS（Instagram/Facebook）に
+最適な、それぞれのターゲット層に響く訴求力の高い紹介文（コピー）を生成してください。
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `Server HTTP Error: ${response.status}`);
+【抽出にあたっての要件】
+- 漢字、数値、単位を誤読しないよう慎重に判定してください（特に賃料、管理費、専有面積、徒歩分数）。
+- 「敷金・礼金」の有無や「築年月」などの数値を抜き出します。
+- おすすめ設備（24時間ゴミ出し、独立洗面台、浴室乾燥、ネット無料、追い焚きなど）があれば「keyFeatures」に最大8点として抽出してください。
+
+【生成コピーの記述要件】
+1. 日本語 (japaneseCopy):
+   - ポータルサイトや国内SNS（Twitter/Instagram）向けの書き出し。
+   - 物件情報を分かりやすく整理し、箇条書き（賃料、管理・共益費、間取り、面積、アクセス、築年）を含める。
+   - 魅力的なアピールポイントを3〜4文でエモーショナルに記述。ハッシュタグを付与。
+
+2. 中国語 (chineseCopy):
+   - 小紅書 (Xiaohongshu / RED) もしくは微信朋友圈の書き方。
+   - 豊かな絵文字（Emoji）を効果的に配置し、中国国籍の契約希望者が気にするポイント（駅近、採光十分、バス・トイレ別"干湿分離/干湿分离"、周囲の環境やスーパー利便性、初期費用の安さ等）をアピール。
+   - ハッシュタグを付与（例: #日本房产 #东京租房 #买房 #好房推薦）。
+
+3. 英語 (englishCopy):
+   - グローバルなクライアント向けの、プロフェッショナルかつ魅力的な英語紹介文。
+   - 重要な物件スペックを整理し、エリア・利便性を高らかにアピール。
+   - 最後にアクション（例: "Inquire via DM for details and viewings!"）を含める。ハッシュタグを付与。
+
+${customPrompt ? `【特別な追加の指示】\nユーザーからの追加カスタム希望です。以下の指示をコピー全体の生成に最優先で反映させてください: "${customPrompt}"` : ""}
+`;
+
+    const isStaticEnv = window.location.hostname.endsWith("github.io") || 
+                        !window.location.hostname.match(/localhost|127\.0\.0\.1|run\.app/);
+
+    try {
+      let data;
+      if (isStaticEnv && userApiKey) {
+        console.log("GitHub/Static environment detected: Calling Gemini directly from browser...");
+        data = await callGeminiDirectlyFromBrowser(flyerImg, promptText);
+      } else {
+        try {
+          const response = await fetch("/api/analyze-flyer", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              flyerImg,
+              customPrompt,
+              userApiKey: userApiKey || undefined
+            })
+          });
+
+          if (!response.ok) {
+            if (response.status === 404 || response.status === 502) {
+              console.warn("Express backend returned 404/502. Falling back to browser-direct API execution...");
+              data = await callGeminiDirectlyFromBrowser(flyerImg, promptText);
+            } else {
+              const errorData = await response.json();
+              throw new Error(errorData.error || `Server HTTP Error: ${response.status}`);
+            }
+          } else {
+            data = await response.json();
+          }
+        } catch (fetchErr: any) {
+          if (fetchErr.name === "TypeError") {
+            console.warn("Backend server not found (Static host). Falling back to browser-direct API..." + fetchErr.message);
+            data = await callGeminiDirectlyFromBrowser(flyerImg, promptText);
+          } else {
+            throw fetchErr;
+          }
+        }
       }
 
-      const data = await response.json();
-      
       setJpText(data.japaneseCopy || "");
       setZhText(data.chineseCopy || "");
       setEnText(data.englishCopy || "");
@@ -357,7 +571,7 @@ export default function App() {
       }
     } catch (err: any) {
       console.error("AI Generation Failure:", err);
-      alert(err.message || "AI文案の生成に失敗しました。時間をおいて再送信するか、APIキーをお確かめください。");
+      alert(err.message || "AI文案の生成に失敗しました。画面右上の「API Key」項目にGemini APIキーを入力して再度お確かめください。");
     } finally {
       setIsGenerating(false);
     }
@@ -368,23 +582,72 @@ export default function App() {
     if (!specs) return;
 
     setIsRegenerating(true);
-    try {
-      const response = await fetch("/api/regenerate-copy", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          specs,
-          customPrompt,
-          userApiKey: userApiKey || undefined
-        })
-      });
 
-      if (!response.ok) {
-        const errJson = await response.json();
-        throw new Error(errJson.error || "スペック変更に伴う再生成に失敗しました。");
+    const regenPrompt = `あなたはプロの不動産仲介代理店のエージェントで、コピーライターです。
+以下の提供された「修正後の正確な物件情報（スペック）」と「アピールポイント」をベースに、
+再度、(1)日本語ポータルサイト/SNS用 (2)中国語の小紅書(Xiaohongshu)向き (3)英語グローバル顧客向けの、最も魅力的で間違いのない集客プロモーション用募集文をそれぞれ再作成してください。
+
+【修正後の物件スペック】
+- 物件名: ${specs.propertyName}
+- 賃料/家賃: ${specs.rent}
+- 管理費/共益費: ${specs.managementFee}
+- 敷金: ${specs.deposit}
+- 礼金: ${specs.keyMoney}
+- 間取り: ${specs.layout}
+- 広さ/専有面積: ${specs.size}
+- 最寄り駅・徒歩: ${specs.stationWalkTime}
+- 所在地住所: ${specs.address}
+- 築年月/築年数: ${specs.constructionYear}
+- 主要な設備特徴: ${specs.keyFeatures.join(", ")}
+
+【記述ルール】
+- 掲載スペック数値は他と齟齬がないよう一貫性を持って反映。
+- 各言語コピーを個別に指定プロパティに格納して、キレイにフォーマットされた文章（ハッシュタグ含む）で返してください。
+
+${customPrompt ? `【特別な追加の指示】\nユーザーによるカスタム指示条件: "${customPrompt}"` : ""}
+`;
+
+    const isStaticEnv = window.location.hostname.endsWith("github.io") || 
+                        !window.location.hostname.match(/localhost|127\.0\.0\.1|run\.app/);
+
+    try {
+      let data;
+      if (isStaticEnv && userApiKey) {
+        console.log("GitHub/Static environment: Regenerating copy directly in browser...");
+        data = await callGeminiRegenDirectlyFromBrowser(specs, regenPrompt);
+      } else {
+        try {
+          const response = await fetch("/api/regenerate-copy", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              specs,
+              customPrompt,
+              userApiKey: userApiKey || undefined
+            })
+          });
+
+          if (!response.ok) {
+            if (response.status === 404 || response.status === 502) {
+              console.warn("Express backend returned 404/502. Falling back to browser-direct API execution...");
+              data = await callGeminiRegenDirectlyFromBrowser(specs, regenPrompt);
+            } else {
+              const errJson = await response.json();
+              throw new Error(errJson.error || "スペック変更に伴う再生成に失敗しました。");
+            }
+          } else {
+            data = await response.json();
+          }
+        } catch (fetchErr: any) {
+          if (fetchErr.name === "TypeError") {
+            console.warn("Backend server not found (Static host). Falling back to browser-direct API...");
+            data = await callGeminiRegenDirectlyFromBrowser(specs, regenPrompt);
+          } else {
+            throw fetchErr;
+          }
+        }
       }
 
-      const data = await response.json();
       setJpText(data.japaneseCopy || "");
       setZhText(data.chineseCopy || "");
       setEnText(data.englishCopy || "");
@@ -487,6 +750,14 @@ export default function App() {
             >
               <RotateCcw className="w-3.5 h-3.5" />
               リセット
+            </button>
+            <button
+              onClick={() => setShowGithubModal(true)}
+              className="px-3.5 py-2 bg-gradient-to-br from-indigo-955 to-slate-900 hover:from-indigo-800 hover:to-slate-850 text-indigo-300 border border-indigo-500/30 hover:border-indigo-450 rounded-xl transition-all duration-200 text-xs flex items-center gap-1.5 font-bold shadow-md shadow-indigo-950/40"
+              title="GitHub Pagesへの公開・連携手順を表示"
+            >
+              <HelpCircle className="w-3.5 h-3.5 text-indigo-400 animate-pulse" />
+              GitHub公開手順
             </button>
           </div>
 
@@ -1471,6 +1742,113 @@ export default function App() {
         </section>
 
       </main>
+
+      {/* GitHub Pages Deployment Modal */}
+      {showGithubModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm animate-fade-in">
+          <div className="bg-[#0f172a] border border-slate-800 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl overflow-y-auto max-h-[90vh]">
+            {/* Header */}
+            <div className="p-5 border-b border-slate-850 bg-gradient-to-r from-indigo-950 to-slate-950 flex justify-between items-center">
+              <div className="flex items-center gap-2.5">
+                <div className="bg-indigo-600/15 p-2 rounded-lg border border-indigo-500/20 text-indigo-400">
+                  <HelpCircle className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">GitHub Pagesでの公開・連携ガイド</h3>
+                  <p className="text-[10px] text-indigo-300/80">作成した帯替え＆AI文案ツールを全世界に「無料」で公開する手順</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setShowGithubModal(false)}
+                className="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition-all text-xs font-bold font-sans"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Body Content */}
+            <div className="p-6 text-xs text-slate-300 space-y-5 leading-relaxed overflow-y-auto">
+              <div className="bg-blue-950/40 border border-blue-500/20 p-4 rounded-xl">
+                <span className="font-bold text-blue-400 flex items-center gap-1 mb-1">
+                  💡 すでに自動デプロイ設定を搭載済みです！
+                </span>
+                <p className="text-[11px] text-slate-300 leading-relaxed">
+                  このプロジェクトには、GitHub Actionsを連携するための設定ファイル（<code>.github/workflows/deploy.yml</code>）およびパス解決用の設定（<code>vite.config.ts</code>の相対パス定義）がすでに組み込み済みです。以下の4ステップを行うだけで、自動的にGitHub Pages上で完全無料・高速で公開用ウェブサイトが構築されます。
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                {/* Step 1 */}
+                <div className="flex gap-3">
+                  <div className="w-5 h-5 rounded-full bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 text-[10px] font-bold flex items-center justify-center shrink-0">1</div>
+                  <div>
+                    <h4 className="font-bold text-white text-xs mb-1">プロジェクトのソースフォルダをダウンロード</h4>
+                    <p className="text-slate-400 text-[11px]">
+                      AI Studio画面左上の「設定（Settings / 歯車アイコン）」をクリックし、<b>「ZIP出力（Export ZIP）」</b>をクリックしてコード一式をパソコンにダウンロード（またはGitHubへ直接共有）します。
+                    </p>
+                  </div>
+                </div>
+
+                {/* Step 2 */}
+                <div className="flex gap-3">
+                  <div className="w-5 h-5 rounded-full bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 text-[10px] font-bold flex items-center justify-center shrink-0">2</div>
+                  <div>
+                    <h4 className="font-bold text-white text-xs mb-1">GitHubでリポジトリを作成してプッシュする</h4>
+                    <p className="text-slate-400 text-[11px]">
+                      GitHubにサインインし、新しいリポジトリ（例: <code>ambitious-obi</code>）を <b>Public（公開）</b> 設定で作成します。<br />
+                      先ほどのZIPファイルを解凍し、その中のすべてのファイル（<code>.github</code>フォルダ、<code>package.json</code>等も含めて丸ごと）を新しいリポジトリにプッシュするか、GitHub画面上のエクスプローラーにドラッグ＆ドロップで追加します。
+                    </p>
+                  </div>
+                </div>
+
+                {/* Step 3 */}
+                <div className="flex gap-3">
+                  <div className="w-5 h-5 rounded-full bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 text-[10px] font-bold flex items-center justify-center shrink-0">3</div>
+                  <div>
+                    <h4 className="font-bold text-white text-xs mb-1">GitHub Pages を有効化（アクション自動連携）</h4>
+                    <p className="text-slate-400 text-[11px]">
+                      作成したGitHubリポジトリの <b>「Settings」タブ ➔ 「Pages」</b> メニューを開きます。<br />
+                      <b>「Build and deployment」➔ 「Source」</b>を、デフォルトの「Deploy from a branch」から <b>「GitHub Actions」</b> に切り替えます。<br />
+                      <span className="text-amber-400 font-semibold">※ 切り替えるだけ！ 組み込み済みの自動ビルド設定が起動し、数分間で世界に1つのあなた専用のURL（<code>https://&lt;ユーザー名&gt;.github.io/&lt;リポジトリ名&gt;/</code>）が公開されます。</span>
+                    </p>
+                  </div>
+                </div>
+
+                {/* Step 4 */}
+                <div className="flex gap-3">
+                  <div className="w-5 h-5 rounded-full bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 text-[10px] font-bold flex items-center justify-center shrink-0">4</div>
+                  <div>
+                    <h4 className="font-bold text-white text-xs mb-1">公開されたリンクでのセキュアな使い方</h4>
+                    <p className="text-slate-400 text-[11px]">
+                      公開されたURLのアドレスに誰もがブラウザからアクセスできます。
+                      サーバーを持たない静的（SPA）公開なので管理コストはゼロです。<br />
+                      AI機能を利用する際は、<b>画面右上にある「API Key」入力項目にご自身のGemini APIキーを入力</b>して使用します。キーは外部サーバーを介さずブラウザ内のセキュアな<code>localStorage</code>にのみ暗号のように保存されるため、安全に稼働します。
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Tips */}
+              <div className="p-3 bg-slate-900 border border-slate-800 rounded-xl flex items-start gap-2 text-slate-400 text-[11px]">
+                <span className="text-amber-400 mt-0.5 font-bold">💡 メンテナンス：</span>
+                <div>
+                  将来的なデザイン微調整やプログラム変更が必要な場合、GitHubのファイルを直接書き換えてコミット（プッシュ）するだけで、同様に自動デプロイが自動トリガーされ数秒でアクセス先サイトがピカピカにアップデートされます！
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 border-t border-slate-850 bg-slate-950/60 flex justify-end gap-2 text-slate-350">
+              <button
+                onClick={() => setShowGithubModal(false)}
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-lg transition-all text-xs"
+              >
+                手順を確認しました (閉じる)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <footer className="mt-12 py-8 bg-[#090d16] border-t border-slate-900 text-center text-xs text-slate-500">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
