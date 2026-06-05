@@ -1,0 +1,6 @@
+{
+  "name": "Ambitious 帯替え & AI募集文生成ツール",
+  "description": "不動産のマイソク（図面）の帯替え画像編集、およびAI（Gemini 2.5/3）による多言語（日・中・英）の自動募集文案の生成が行える、不動産仲介業務を支援するオールインワンツール。",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
