@@ -1804,13 +1804,18 @@ ${customPrompt ? `【特別な追加の指示】\nユーザーによるカスタ
                 {/* Step 3 */}
                 <div className="flex gap-3">
                   <div className="w-5 h-5 rounded-full bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 text-[10px] font-bold flex items-center justify-center shrink-0">3</div>
-                  <div>
-                    <h4 className="font-bold text-white text-xs mb-1">GitHub Pages を有効化（アクション自動連携）</h4>
-                    <p className="text-slate-400 text-[11px]">
+                  <div className="flex-1">
+                    <h4 className="font-bold text-white text-xs mb-1">GitHub Pages を有効化（重要・Actionsへの切り替え）</h4>
+                    <p className="text-slate-400 text-[11px] mb-2">
                       作成したGitHubリポジトリの <b>「Settings」タブ ➔ 「Pages」</b> メニューを開きます。<br />
                       <b>「Build and deployment」➔ 「Source」</b>を、デフォルトの「Deploy from a branch」から <b>「GitHub Actions」</b> に切り替えます。<br />
-                      <span className="text-amber-400 font-semibold">※ 切り替えるだけ！ 組み込み済みの自動ビルド設定が起動し、数分間で世界に1つのあなた専用のURL（<code>https://&lt;ユーザー名&gt;.github.io/&lt;リポジトリ名&gt;/</code>）が公開されます。</span>
+                      <span className="text-emerald-400 font-semibold">※ これを忘れると、ワークフロー（GitHub Actions）で「Get Pages site failed」や「HttpError: Not Found」というエラーが出て処理がストップします。</span>
                     </p>
+                    {/* Error solution highlight box */}
+                    <div className="p-2.5 bg-red-950/30 border border-red-500/20 rounded-lg text-[10.5px] text-red-300">
+                      <strong className="text-red-400">🚨 添付画像のエラー（Get Pages site failed / Not Found）の解消法：</strong><br />
+                      リポジトリの <b>Settings ➔ Pages ➔ Source を「GitHub Actions」に切り替えてから</b>、GitHubの「Actions」タブを開き、失敗したワークフローを選択して <b>「Re-run all jobs」</b>（すべてのジョブを再実行）をクリックしてください。正常にビルド・公開が完了します！
+                    </div>
                   </div>
                 </div>
 
