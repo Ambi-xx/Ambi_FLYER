@@ -247,7 +247,10 @@ export default function App() {
 
   // Canvas Compositing to produce beautiful final JPEG brochures
   const handleDownloadComposit = async () => {
-    if (!flyerImg) return;
+    if (!flyerImg) {
+      alert("募集図面（マイソク）がアップロードされていません。最初に編集エリア左上のボタンより図面マイソクをアップロードしていただくか、「帯のみ高解像度ダウンロード」をご利用ください。");
+      return;
+    }
     
     try {
       const flyerImage = new Image();
@@ -304,6 +307,33 @@ export default function App() {
     } catch (err) {
       console.error("Brochure rendering issue:", err);
       alert("画像の合成、生成に失敗しました。画像が読み込み可能かご確認ください。");
+    }
+  };
+
+  // Downloads ONLY the created Obi (band) at high resolution
+  const handleDownloadObiOnly = (scale: number) => {
+    try {
+      let dataUrl = "";
+      if (obiMode === "uploaded" && obiImg) {
+        // If they uploaded an image, just download it directly
+        dataUrl = obiImg;
+      } else {
+        // If a generated obi, draw high-res canvas on the fly with custom scale
+        dataUrl = drawObiToCanvas(obiConfig, scale);
+      }
+
+      const formatTime = new Date().toISOString().replace(/[:.]/g, "-");
+      const downloadLink = document.createElement("a");
+      downloadLink.href = dataUrl;
+      // name file based on scale resolution
+      const widthVal = 1200 * scale;
+      downloadLink.download = `Ambitious_obi_${widthVal}px_${formatTime}.png`;
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
+    } catch (err) {
+      console.error("Obi download issue:", err);
+      alert("帯のみのダウンロード処理でエラーが発生しました。");
     }
   };
 
@@ -703,29 +733,29 @@ ${customPrompt ? `【特別な追加の指示】\nユーザーによるカスタ
   };
 
   return (
-    <div className="min-h-screen bg-[#090d16] text-[#e2e8f0] font-sans selection:bg-blue-600 selection:text-white">
+    <div className="min-h-screen bg-[#fcfbf9] text-slate-800 font-sans selection:bg-emerald-600 selection:text-white">
       {/* Premium Header Decoration Lines */}
-      <div className="h-1.5 w-full bg-gradient-to-r from-blue-600 via-indigo-500 to-amber-500"></div>
+      <div className="h-1 w-full bg-gradient-to-r from-emerald-700 via-stone-300 to-amber-600"></div>
 
       {/* Main Professional Toolbar */}
-      <header className="bg-[#0f172a] border-b border-gray-800 px-6 py-4 sticky top-0 z-10 shadow-lg backdrop-blur-md bg-opacity-95">
+      <header className="bg-white/95 border-b border-stone-200/80 px-6 py-3.5 sticky top-0 z-10 shadow-xs backdrop-blur-md">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           
           {/* Logo Brand Brandings */}
           <div className="flex items-center gap-3">
-            <div className="bg-gradient-to-br from-blue-600 to-indigo-600 p-2.5 rounded-xl shadow-md glow-shadow-blue">
-              <Scissors className="w-5.5 h-5.5 text-white animate-pulse" />
+            <div className="bg-emerald-850 p-2.5 rounded-xl shadow-sm text-white">
+              <Scissors className="w-5 h-5 text-white" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-500 bg-opacity-20 text-blue-400 border border-blue-500/30">
-                  Real Estate PRO
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200/60">
+                  REAL ESTATE ADVISORY
                 </span>
-                <span className="text-[10px] text-gray-500 font-mono tracking-wider">
+                <span className="text-[10px] text-stone-400 font-mono tracking-wider">
                   V2.0
                 </span>
               </div>
-              <h1 className="text-lg font-bold text-white tracking-tight leading-tight">
+              <h1 className="text-base font-extrabold text-slate-900 tracking-tight leading-tight">
                 Ambitious 帯替え &amp; AI自動募集文生成ツール
               </h1>
             </div>
@@ -733,19 +763,19 @@ ${customPrompt ? `【特別な追加の指示】\nユーザーによるカスタ
 
           {/* Quick API Key panel / info */}
           <div className="flex items-center gap-3 w-full md:w-auto justify-end">
-            <div className="flex items-center gap-2 bg-[#1e293b] px-3.5 py-2 rounded-xl border border-gray-700 max-w-sm w-full md:w-64">
-              <span className="text-xs font-bold text-gray-400 whitespace-nowrap">API Key <span className="text-amber-400">*</span>:</span>
+            <div className="flex items-center gap-2 bg-stone-50 hover:bg-stone-100/60 transition px-3.5 py-1.5 rounded-xl border border-stone-200 max-w-sm w-full md:w-64">
+              <span className="text-[11px] font-bold text-stone-500 whitespace-nowrap">API Key <span className="text-amber-600">*</span>:</span>
               <input 
                 type="password" 
                 value={userApiKey}
                 onChange={(e) => setUserApiKey(e.target.value)}
-                placeholder="Secretsから自動読込中 (又は個別入力)"
-                className="bg-transparent border-none focus:ring-0 text-xs w-full text-slate-200 placeholder-slate-500 outline-none"
+                placeholder="Secretsから自動読込中"
+                className="bg-transparent border-none focus:ring-0 text-xs w-full text-stone-850 placeholder-stone-400 outline-none p-0.5"
               />
             </div>
             <button
               onClick={handleClearEverything}
-              className="px-3.5 py-2 bg-slate-800 hover:bg-red-950 hover:text-red-300 border border-slate-700 hover:border-red-800/40 text-slate-300 rounded-xl transition-all duration-200 text-xs flex items-center gap-1.5 font-medium"
+              className="px-3.5 py-2 bg-stone-50 hover:bg-red-50 hover:text-red-700 border border-stone-200 hover:border-red-200 text-stone-600 rounded-xl transition-all duration-200 text-xs flex items-center gap-1.5 font-medium shadow-xs"
               title="すべてクリアして最初からやり直す"
             >
               <RotateCcw className="w-3.5 h-3.5" />
@@ -753,10 +783,10 @@ ${customPrompt ? `【特別な追加の指示】\nユーザーによるカスタ
             </button>
             <button
               onClick={() => setShowGithubModal(true)}
-              className="px-3.5 py-2 bg-gradient-to-br from-indigo-955 to-slate-900 hover:from-indigo-800 hover:to-slate-850 text-indigo-300 border border-indigo-500/30 hover:border-indigo-450 rounded-xl transition-all duration-200 text-xs flex items-center gap-1.5 font-bold shadow-md shadow-indigo-950/40"
+              className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl transition-all duration-200 text-xs flex items-center gap-1.5 font-bold shadow-xs border border-slate-900"
               title="GitHub Pagesへの公開・連携手順を表示"
             >
-              <HelpCircle className="w-3.5 h-3.5 text-indigo-400 animate-pulse" />
+              <HelpCircle className="w-3.5 h-3.5 text-emerald-400" />
               GitHub公開手順
             </button>
           </div>
@@ -765,34 +795,34 @@ ${customPrompt ? `【特別な追加の指示】\nユーザーによるカスタ
       </header>
 
       {/* Main Grid Workspace */}
-      <main className="max-w-7xl mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
+      <main className="max-w-[95%] xl:max-w-[1600px] mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8">
         
-        {/* ==================== LEFT COLUMN: IMAGE COMBINING ==================== */}
-        <section className="bg-[#0f172a] rounded-2xl shadow-xl border border-slate-800 flex flex-col overflow-hidden animate-fade-in relative">
+        {/* ==================== RIGHT COLUMN: IMAGE COMBINING ==================== */}
+        <section className="bg-white rounded-2xl shadow-xs border border-stone-200/90 flex flex-col overflow-hidden animate-fade-in relative lg:col-span-8 xl:col-span-9 lg:order-2">
           
-          <div className="p-5 border-b border-slate-800 bg-[#141d30] flex justify-between items-center">
-            <h2 className="text-base font-bold flex items-center gap-2 text-white">
-              <span className="flex items-center justify-center w-6 h-6 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20 text-xs font-mono font-bold">1</span>
+          <div className="p-5 border-b border-stone-150 bg-stone-50/50 flex justify-between items-center">
+            <h2 className="text-base font-extrabold flex items-center gap-2 text-slate-900">
+              <span className="flex items-center justify-center w-6 h-6 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200/60 text-xs font-mono font-bold">1</span>
               帯替え・画像加工（電子消しゴム＆自社帯合成）
             </h2>
             
-            <div className="flex items-center gap-1.5 bg-[#1e293b] rounded-lg p-0.5 border border-slate-700/60 text-xs text-slate-300">
+            <div className="flex items-center gap-1.5 bg-[#f1f0eb] rounded-lg p-0.5 border border-stone-200 text-xs text-stone-600">
               <button 
                 onClick={() => setObiMode("generated")}
-                className={`px-2.5 py-1 rounded-md transition-all ${
+                className={`px-2.5 py-1 rounded-md transition-all cursor-pointer ${
                   obiMode === "generated" 
-                    ? "bg-blue-600 text-white font-semibold" 
-                    : "hover:bg-slate-700/50"
+                    ? "bg-emerald-750 text-white font-bold shadow-xs" 
+                    : "hover:bg-stone-200/60"
                 }`}
               >
                 自社帯自動生成
               </button>
               <button 
                 onClick={() => setObiMode("uploaded")}
-                className={`px-2.5 py-1 rounded-md transition-all ${
+                className={`px-2.5 py-1 rounded-md transition-all cursor-pointer ${
                   obiMode === "uploaded" 
-                    ? "bg-blue-600 text-white font-semibold" 
-                    : "hover:bg-slate-700/50"
+                    ? "bg-emerald-750 text-white font-bold shadow-xs" 
+                    : "hover:bg-stone-200/60"
                 }`}
               >
                 帯画像アップ
@@ -802,10 +832,10 @@ ${customPrompt ? `【特別な追加の指示】\nユーザーによるカスタ
                   setObiMode("eraser");
                   setObiImg(null);
                 }}
-                className={`px-2.5 py-1 rounded-md transition-all ${
+                className={`px-2.5 py-1 rounded-md transition-all cursor-pointer ${
                   obiMode === "eraser" 
-                    ? "bg-[#334155] text-white font-semibold border border-slate-500/40" 
-                    : "hover:bg-slate-700/50"
+                    ? "bg-stone-700 text-white font-bold shadow-xs" 
+                    : "hover:bg-stone-200/60"
                 }`}
               >
                 白塗り(消去)
@@ -821,7 +851,7 @@ ${customPrompt ? `【特別な追加の指示】\nユーザーによるカスタ
               {/* Flyer upload box */}
               <div 
                 onClick={() => flyerFileInputRef.current?.click()}
-                className="group border-2 border-dashed border-slate-700 hover:border-blue-500 rounded-xl p-4 flex flex-col items-center justify-center text-center cursor-pointer bg-[#1e293b]/30 hover:bg-[#1e293b]/70 transition-all duration-300"
+                className="group border-2 border-dashed border-stone-300 hover:border-emerald-600 rounded-xl p-4 flex flex-col items-center justify-center text-center cursor-pointer bg-stone-50/40 hover:bg-stone-100/60 transition-all duration-300"
               >
                 <input 
                   type="file" 
@@ -832,15 +862,15 @@ ${customPrompt ? `【特別な追加の指示】\nユーザーによるカスタ
                 />
                 
                 {isProcessingPdf ? (
-                  <Loader2 className="w-8 h-8 text-blue-500 animate-spin mb-2" />
+                  <Loader2 className="w-8 h-8 text-emerald-600 animate-spin mb-2" />
                 ) : (
-                  <FileText className="w-8 h-8 text-slate-400 group-hover:text-blue-400 group-hover:scale-110 transition-all mb-2" />
+                  <FileText className="w-8 h-8 text-stone-400 group-hover:text-emerald-600 group-hover:scale-105 transition-all mb-2" />
                 )}
                 
-                <span className="text-xs font-bold text-slate-200">元図面マイソクを取り込む</span>
-                <span className="text-[10px] text-slate-500 mt-1">PDF形式 または 画像 (JPG/PNG)</span>
+                <span className="text-xs font-bold text-slate-800">元図面マイソクを取り込む</span>
+                <span className="text-[10px] text-stone-500 mt-1">PDF形式 或者 图像 (JPG/PNG)</span>
                 {flyerFileName && (
-                  <span className="text-[10px] px-2 py-0.5 mt-2 bg-blue-950 text-blue-300 border border-blue-800/40 rounded max-w-full truncate">
+                  <span className="text-[10px] px-2 py-0.5 mt-2 bg-emerald-50 text-emerald-800 border border-emerald-200/60 rounded max-w-full truncate font-medium">
                     {flyerFileName}
                   </span>
                 )}
@@ -851,8 +881,8 @@ ${customPrompt ? `【特別な追加の指示】\nユーザーによるカスタ
                 onClick={() => obiFileInputRef.current?.click()}
                 className={`group border-2 border-dashed rounded-xl p-4 flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-300 ${
                   obiMode === "uploaded" 
-                    ? "border-emerald-500 bg-emerald-950/10"
-                    : "border-slate-700 hover:border-emerald-500 bg-[#1e293b]/30 hover:bg-[#1e293b]/70"
+                    ? "border-emerald-600 bg-emerald-50/40"
+                    : "border-stone-300 hover:border-emerald-600 bg-stone-50/40 hover:bg-stone-100/60"
                 }`}
               >
                 <input 
@@ -862,17 +892,17 @@ ${customPrompt ? `【特別な追加の指示】\nユーザーによるカスタ
                   accept="image/*" 
                   className="hidden" 
                 />
-                <ImageIcon className={`w-8 h-8 mb-2 group-hover:scale-110 transition-all ${
-                  obiMode === "uploaded" ? "text-emerald-400" : "text-slate-400 group-hover:text-emerald-400"
+                <ImageIcon className={`w-8 h-8 mb-2 group-hover:scale-105 transition-all ${
+                  obiMode === "uploaded" ? "text-emerald-700" : "text-stone-400 group-hover:text-emerald-700"
                 }`} />
-                <span className="text-xs font-bold text-slate-200">自社の紹介帯（看板）を入れる</span>
-                <span className="text-[10px] text-slate-500 mt-1">自社の図面用の帯画像ファイル</span>
+                <span className="text-xs font-bold text-slate-800">自社の紹介帯（看板）を入れる</span>
+                <span className="text-[10px] text-stone-500 mt-1">自社の図面用の帯画像ファイル</span>
                 {uploadedObiFilename && obiMode === "uploaded" ? (
-                  <span className="text-[10px] px-2 py-0.5 mt-2 bg-emerald-950 text-emerald-300 border border-emerald-800/40 rounded max-w-full truncate">
+                  <span className="text-[10px] px-2 py-0.5 mt-2 bg-emerald-50 text-emerald-800 border border-emerald-200/60 rounded max-w-full truncate font-medium">
                     {uploadedObiFilename}
                   </span>
                 ) : (
-                  <span className="text-[10px] text-amber-500/80 mt-1">
+                  <span className="text-[10px] text-amber-700/80 mt-1 font-medium">
                     （無ければ自動生成、又消去で対応可）
                   </span>
                 )}
@@ -882,150 +912,141 @@ ${customPrompt ? `【特別な追加の指示】\nユーザーによるカスタ
 
             {/* Dynamic Obi Generator Customization options if selected */}
             {obiMode === "generated" && (
-              <div className="bg-[#141d30] border border-slate-800 p-4 rounded-xl flex flex-col gap-3">
+              <div className="bg-stone-50 border border-stone-200 p-4 rounded-xl flex flex-col gap-3">
                 <div className="flex items-center gap-1.5 justify-between">
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-slate-300">
-                    <Sliders className="w-3.5 h-3.5 text-blue-400" />
+                  <div className="flex items-center gap-1.5 text-xs font-extrabold text-slate-900">
+                    <Sliders className="w-3.5 h-3.5 text-emerald-700" />
                     自社帯の掲載情報編集 &amp; カラーカスタマイズ
                   </div>
-                  <span className="text-[10px] text-gray-500">リアルタイム反映</span>
+                  <span className="text-[10px] font-bold text-stone-500">リアルタイム反映</span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="text-[10px] text-slate-400 block mb-1">宅建会社名 (最大28文字)</label>
+                    <label className="text-[10px] font-bold text-stone-600 block mb-1">宅建会社名 (最大28文字)</label>
                     <input 
                       type="text" 
                       value={obiConfig.companyName}
                       onChange={(e) => setObiConfig(prev => ({ ...prev, companyName: e.target.value }))}
-                      className="w-full text-xs p-2 bg-[#1e293b] border border-slate-700 rounded-lg text-white" 
+                      className="w-full text-xs p-2 bg-white border border-stone-200 hover:border-stone-300 focus:border-emerald-750 focus:bg-white text-slate-800 rounded-lg outline-none transition-all shadow-xs" 
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] text-slate-400 block mb-1">免許番号</label>
+                    <label className="text-[10px] font-bold text-stone-600 block mb-1">免許番号</label>
                     <input 
                       type="text" 
                       value={obiConfig.licenseNumber}
                       onChange={(e) => setObiConfig(prev => ({ ...prev, licenseNumber: e.target.value }))}
-                      className="w-full text-xs p-2 bg-[#1e293b] border border-slate-700 rounded-lg text-white" 
+                      className="w-full text-xs p-2 bg-white border border-stone-200 hover:border-stone-300 focus:border-emerald-750 focus:bg-white text-slate-800 rounded-lg outline-none transition-all shadow-xs" 
                     />
                   </div>
                   <div className="col-span-1 sm:col-span-2">
-                    <label className="text-[10px] text-slate-400 block mb-1">本店所在地</label>
+                    <label className="text-[10px] font-bold text-stone-600 block mb-1">本店所在地</label>
                     <input 
                       type="text" 
                       value={obiConfig.address}
                       onChange={(e) => setObiConfig(prev => ({ ...prev, address: e.target.value }))}
-                      className="w-full text-xs p-2 bg-[#1e293b] border border-slate-700 rounded-lg text-white" 
+                      className="w-full text-xs p-2 bg-white border border-stone-200 hover:border-stone-300 focus:border-emerald-750 focus:bg-white text-slate-800 rounded-lg outline-none transition-all shadow-xs" 
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] text-slate-400 block mb-1">お問合せ電話番号 (TEL)</label>
+                    <label className="text-[10px] font-bold text-stone-600 block mb-1">お問合せ電話番号 (TEL)</label>
                     <input 
                       type="text" 
                       value={obiConfig.phone}
                       onChange={(e) => setObiConfig(prev => ({ ...prev, phone: e.target.value }))}
-                      className="w-full text-xs p-2 bg-[#1e293b] border border-slate-700 rounded-lg text-white" 
+                      className="w-full text-xs p-2 bg-white border border-stone-200 hover:border-stone-300 focus:border-emerald-750 focus:bg-white text-slate-800 rounded-lg outline-none transition-all shadow-xs" 
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] text-slate-400 block mb-1">FAX番号</label>
+                    <label className="text-[10px] font-bold text-stone-600 block mb-1">FAX番号</label>
                     <input 
                       type="text" 
                       value={obiConfig.fax || ""}
                       onChange={(e) => setObiConfig(prev => ({ ...prev, fax: e.target.value }))}
-                      className="w-full text-xs p-2 bg-[#1e293b] border border-slate-700 rounded-lg text-white" 
+                      className="w-full text-xs p-2 bg-white border border-stone-200 hover:border-stone-300 focus:border-emerald-750 focus:bg-white text-slate-800 rounded-lg outline-none transition-all shadow-xs" 
                     />
                   </div>
-                  <div>
-                    <label className="text-[10px] text-slate-400 block mb-1">担当窓口</label>
+                   <div>
+                    <label className="text-[10px] font-bold text-stone-600 block mb-1">担当</label>
                     <input 
                       type="text" 
                       value={obiConfig.contactPerson || ""}
                       onChange={(e) => setObiConfig(prev => ({ ...prev, contactPerson: e.target.value }))}
-                      className="w-full text-xs p-2 bg-[#1e293b] border border-slate-700 rounded-lg text-white" 
+                      className="w-full text-xs p-2 bg-white border border-stone-200 hover:border-stone-300 focus:border-emerald-750 focus:bg-white text-slate-800 rounded-lg outline-none transition-all shadow-xs" 
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] text-slate-400 block mb-1">仲介手数料</label>
+                    <label className="text-[10px] font-bold text-stone-600 block mb-1">仲介手数料</label>
                     <input 
                       type="text" 
                       value={obiConfig.commission || ""}
                       onChange={(e) => setObiConfig(prev => ({ ...prev, commission: e.target.value }))}
-                      className="w-full text-xs p-2 bg-[#1e293b] border border-slate-700 rounded-lg text-white" 
+                      className="w-full text-xs p-2 bg-white border border-stone-200 hover:border-stone-300 focus:border-emerald-750 focus:bg-white text-slate-800 rounded-lg outline-none transition-all shadow-xs" 
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] text-slate-400 block mb-1">メールアドレス</label>
+                    <label className="text-[10px] font-bold text-stone-600 block mb-1">メールアドレス</label>
                     <input 
                       type="text" 
                       value={obiConfig.email}
                       onChange={(e) => setObiConfig(prev => ({ ...prev, email: e.target.value }))}
-                      className="w-full text-xs p-2 bg-[#1e293b] border border-slate-700 rounded-lg text-white" 
+                      className="w-full text-xs p-2 bg-white border border-stone-200 hover:border-stone-300 focus:border-emerald-750 focus:bg-white text-slate-800 rounded-lg outline-none transition-all shadow-xs" 
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] text-slate-400 block mb-1">ウェブサイト URL</label>
+                    <label className="text-[10px] font-bold text-stone-600 block mb-1">ウェブサイト URL</label>
                     <input 
                       type="text" 
                       value={obiConfig.website}
                       onChange={(e) => setObiConfig(prev => ({ ...prev, website: e.target.value }))}
-                      className="w-full text-xs p-2 bg-[#1e293b] border border-slate-700 rounded-lg text-white" 
-                    />
-                  </div>
-                  <div className="col-span-1 sm:col-span-2">
-                    <label className="text-[10px] text-slate-400 block mb-1">キャッチコピー・宣伝文句 (一番上に表示)</label>
-                    <input 
-                      type="text" 
-                      value={obiConfig.tagline}
-                      onChange={(e) => setObiConfig(prev => ({ ...prev, tagline: e.target.value }))}
-                      className="w-full text-xs p-2 bg-[#1e293b] border border-slate-700 rounded-lg text-white" 
+                      className="w-full text-xs p-2 bg-white border border-stone-200 hover:border-stone-300 focus:border-emerald-750 focus:bg-white text-slate-800 rounded-lg outline-none transition-all shadow-xs" 
                     />
                   </div>
                 </div>
 
                 {/* Banner branding colors */}
-                <div className="pt-2 border-t border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-400">
+                <div className="pt-3 border-t border-stone-200 flex flex-wrap items-center justify-between gap-3 text-xs text-stone-550">
                   <div className="flex items-center gap-2">
-                    <span>帯のテーマカラー:</span>
+                    <span className="font-bold">帯のテーマカラー:</span>
                     <div className="flex gap-1.5">
                       <button 
                         onClick={() => applyColorTheme("#0f172a", "#ffffff")}
-                        className="w-5 h-5 rounded-full bg-[#0f172a] border border-slate-600"
+                        className="w-5 h-5 rounded-full bg-[#0f172a] border border-stone-300 cursor-pointer"
                         title="ネイビー・ホワイト"
                       />
                       <button 
                         onClick={() => applyColorTheme("#ffffff", "#1e293b")}
-                        className="w-5 h-5 rounded-full bg-[#ffffff] border border-slate-400 text-slate-900 font-bold flex items-center justify-center text-[8px]"
+                        className="w-5 h-5 rounded-full bg-[#ffffff] border border-stone-350 text-slate-900 font-extrabold flex items-center justify-center text-[8px] cursor-pointer"
                         title="ホワイト"
                       >W</button>
                       <button 
                         onClick={() => applyColorTheme("#1e3a8a", "#ffffff")}
-                        className="w-5 h-5 rounded-full bg-[#1e3a8a] border border-slate-600"
+                        className="w-5 h-5 rounded-full bg-[#1e3a8a] border border-stone-300 cursor-pointer"
                         title="ロイヤルブルー"
                       />
                       <button 
                         onClick={() => applyColorTheme("#065f46", "#ffffff")}
-                        className="w-5 h-5 rounded-full bg-[#065f46] border border-slate-600"
+                        className="w-5 h-5 rounded-full bg-[#065f46] border border-stone-300 cursor-pointer"
                         title="クラシックグリーン"
                       />
                       <button 
                         onClick={() => applyColorTheme("#78350f", "#fffaf0")}
-                        className="w-5 h-5 rounded-full bg-[#78350f] border border-slate-600"
+                        className="w-5 h-5 rounded-full bg-[#78350f] border border-stone-300 cursor-pointer"
                         title="ウォルナットゴールド"
                       />
                     </div>
                   </div>
 
                   <div className="flex gap-2">
-                    <label className="flex items-center gap-1.5 cursor-pointer">
+                    <label className="flex items-center gap-1.5 cursor-pointer select-none">
                       <input 
                         type="checkbox" 
                         checked={obiConfig.showBorders}
                         onChange={(e) => setObiConfig(prev => ({ ...prev, showBorders: e.target.checked }))}
-                        className="rounded bg-[#1e293b] border-slate-700 text-blue-600 focus:ring-0"
+                        className="rounded bg-white border-stone-300 text-emerald-750 focus:ring-0"
                       />
-                      <span>二重枠線を描画</span>
+                      <span className="font-bold text-slate-800">二重枠線を描画</span>
                     </label>
                   </div>
                 </div>
@@ -1038,33 +1059,33 @@ ${customPrompt ? `【特別な追加の指示】\nユーザーによるカスタ
               <div className="flex flex-col gap-4">
                 
                 {/* Visual alignment aids buttons */}
-                <div className="flex flex-wrap items-center justify-between gap-2 bg-[#141d30] p-3 rounded-xl border border-slate-800">
-                  <div className="text-xs text-slate-400 font-bold flex items-center gap-1">
-                    <Info className="w-3.5 h-3.5 text-blue-400" />
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-stone-50 p-3.5 rounded-xl border border-stone-200">
+                  <div className="text-xs text-slate-900 font-extrabold flex items-center gap-1.5">
+                    <Info className="w-3.5 h-3.5 text-emerald-700" />
                     帯の自動配置テンプレート
                   </div>
                   <div className="flex flex-wrap gap-1.5 text-xs">
                     <button 
                       onClick={() => applyPresetLocation("bottom-16")}
-                      className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg border border-slate-700 transition"
+                      className="px-2.5 py-1.5 bg-white hover:bg-stone-100 text-slate-800 rounded-lg border border-stone-200 shadow-xs transition cursor-pointer font-bold"
                     >
                       下部 16% (標準帯)
                     </button>
                     <button 
                       onClick={() => applyPresetLocation("bottom-20")}
-                      className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg border border-slate-700 transition"
+                      className="px-2.5 py-1.5 bg-white hover:bg-stone-100 text-slate-800 rounded-lg border border-stone-200 shadow-xs transition cursor-pointer font-bold"
                     >
                       下部 20% (太帯)
                     </button>
                     <button 
                       onClick={() => applyPresetLocation("top-15")}
-                      className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg border border-slate-700 transition"
+                      className="px-2.5 py-1.5 bg-white hover:bg-stone-100 text-slate-800 rounded-lg border border-stone-200 shadow-xs transition cursor-pointer font-bold"
                     >
-                      上部 15% (ヘッダー白付)
+                      上部 15% (ヘッダー用)
                     </button>
                     <button 
                       onClick={() => applyPresetLocation("full-height")}
-                      className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg border border-slate-700 transition"
+                      className="px-2.5 py-1.5 bg-white hover:bg-stone-100 text-slate-850 rounded-lg border border-stone-200 shadow-xs transition cursor-pointer font-bold"
                     >
                       全体 (画像確認用)
                     </button>
@@ -1072,18 +1093,20 @@ ${customPrompt ? `【特別な追加の指示】\nユーザーによるカスタ
                 </div>
 
                 {/* Subtitle guidance */}
-                <p className="text-[11px] text-amber-400/90 leading-relaxed font-sans">
-                  💡 <b>操作方法:</b> 下部のプレビュー上で青い枠線（帯）を<b>直接ドラッグ＆リサイズ</b>するか、下記の<b>微調整コントローラー (スライダー＆1クリック単位ボタン)</b> を使用して、隙間なく完璧に位置合わせを行えます。
-                </p>
+                <div className="bg-emerald-50/50 border border-emerald-100 p-3 rounded-xl">
+                  <p className="text-[11px] text-emerald-900 leading-relaxed font-sans">
+                    💡 <b>操作方法:</b> 下部のプレビュー上で緑の枠線（帯）を<b>直接ドラッグ＆リサイズ</b>するか、下記の<b>位置調整コントローラー (スライダー＆1クリック単位ボタン)</b> を使用して、隙間なく完璧に位置合わせを行えます。
+                  </p>
+                </div>
 
                 {/* Silk-smooth Precision Alignment Controller Panel */}
-                <div className="bg-[#141d30] border border-slate-800 rounded-xl p-4 flex flex-col gap-4">
-                  <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-                    <span className="text-xs font-bold text-white flex items-center gap-1.5">
-                      <Sliders className="w-3.5 h-3.5 text-blue-400" />
+                <div className="bg-stone-50 border border-stone-200 rounded-xl p-4 flex flex-col gap-4">
+                  <div className="flex items-center justify-between border-b border-stone-200 pb-2">
+                    <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                      <Sliders className="w-3.5 h-3.5 text-emerald-700" />
                       📐 帯の位置・サイズ微調整 (0.1%単位でミリ調整可能)
                     </span>
-                    <span className="text-[10px] bg-blue-950 text-blue-400 border border-blue-800/30 font-mono px-2 py-0.5 rounded-full font-bold">
+                    <span className="text-[10px] bg-emerald-50 text-emerald-850 border border-emerald-205 font-mono px-2 py-0.5 rounded-full font-bold">
                       X: {obiRect.x.toFixed(1)}% | Y: {obiRect.y.toFixed(1)}% | 幅: {obiRect.width.toFixed(1)}% | 高: {obiRect.height.toFixed(1)}%
                     </span>
                   </div>
@@ -1093,13 +1116,13 @@ ${customPrompt ? `【特別な追加の指示】\nユーザーによるカスタ
                     {/* Y Position */}
                     <div className="flex flex-col gap-1">
                       <div className="flex justify-between items-center text-[11px]">
-                        <span className="text-slate-300 font-medium">↕️ 上下位置 (Y座標)</span>
-                        <span className="font-mono text-slate-500 font-bold">{obiRect.y.toFixed(1)}%</span>
+                        <span className="text-slate-700 font-bold">↕️ 上下位置 (Y座標)</span>
+                        <span className="font-mono text-stone-550 font-bold">{obiRect.y.toFixed(1)}%</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => adjustObiRect("y", -1)}
-                          className="w-7 h-7 bg-slate-800 hover:bg-slate-700 active:bg-blue-600 rounded text-center font-bold text-slate-300 flex items-center justify-center transition-colors"
+                          className="w-7 h-7 bg-white hover:bg-stone-100 active:bg-emerald-50 text-stone-850 rounded border border-stone-200 text-center font-bold flex items-center justify-center transition shadow-xs cursor-pointer"
                           title="上へ1%移動"
                         >
                           ▲
@@ -1111,11 +1134,11 @@ ${customPrompt ? `【特別な追加の指示】\nユーザーによるカスタ
                           step="0.1"
                           value={obiRect.y}
                           onChange={(e) => setObiRect(prev => ({ ...prev, y: parseFloat(e.target.value) }))}
-                          className="flex-1 accent-blue-500 h-1 bg-slate-850 rounded-lg appearance-none cursor-pointer"
+                          className="flex-1 accent-emerald-700 h-1 bg-stone-200 rounded-lg appearance-none cursor-pointer"
                         />
                         <button
                           onClick={() => adjustObiRect("y", 1)}
-                          className="w-7 h-7 bg-slate-800 hover:bg-slate-700 active:bg-blue-600 rounded text-center font-bold text-slate-300 flex items-center justify-center transition-colors"
+                          className="w-7 h-7 bg-white hover:bg-stone-100 active:bg-emerald-50 text-stone-850 rounded border border-stone-200 text-center font-bold flex items-center justify-center transition shadow-xs cursor-pointer"
                           title="下へ1%移動"
                         >
                           ▼
@@ -1126,13 +1149,13 @@ ${customPrompt ? `【特別な追加の指示】\nユーザーによるカスタ
                     {/* Height Size */}
                     <div className="flex flex-col gap-1">
                       <div className="flex justify-between items-center text-[11px]">
-                        <span className="text-slate-300 font-medium">🛡️ 帯の高さ (縦幅)</span>
-                        <span className="font-mono text-slate-500 font-bold">{obiRect.height.toFixed(1)}%</span>
+                        <span className="text-slate-700 font-bold">🛡️ 帯の高さ (縦幅)</span>
+                        <span className="font-mono text-stone-550 font-bold">{obiRect.height.toFixed(1)}%</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => adjustObiRect("height", -1)}
-                          className="w-7 h-7 bg-slate-800 hover:bg-slate-700 active:bg-blue-600 rounded text-center font-bold text-slate-300 flex items-center justify-center transition-colors"
+                          className="w-7 h-7 bg-white hover:bg-stone-100 active:bg-emerald-50 text-stone-850 rounded border border-stone-200 text-center font-bold flex items-center justify-center transition shadow-xs cursor-pointer"
                           title="高さを1%縮める"
                         >
                           －
@@ -1144,78 +1167,12 @@ ${customPrompt ? `【特別な追加の指示】\nユーザーによるカスタ
                           step="0.1"
                           value={obiRect.height}
                           onChange={(e) => setObiRect(prev => ({ ...prev, height: parseFloat(e.target.value) }))}
-                          className="flex-1 accent-indigo-500 h-1 bg-slate-850 rounded-lg appearance-none cursor-pointer"
+                          className="flex-1 accent-emerald-700 h-1 bg-stone-200 rounded-lg appearance-none cursor-pointer"
                         />
                         <button
                           onClick={() => adjustObiRect("height", 1)}
-                          className="w-7 h-7 bg-slate-800 hover:bg-slate-700 active:bg-blue-600 rounded text-center font-bold text-slate-300 flex items-center justify-center transition-colors"
-                          title="高さを1%伸ばす"
-                        >
-                          ＋
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* X Position */}
-                    <div className="flex flex-col gap-1">
-                      <div className="flex justify-between items-center text-[11px]">
-                        <span className="text-slate-300 font-medium">↔️ 左右位置 (X座標)</span>
-                        <span className="font-mono text-slate-500 font-bold">{obiRect.x.toFixed(1)}%</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => adjustObiRect("x", -1)}
-                          className="w-7 h-7 bg-slate-800 hover:bg-slate-700 active:bg-blue-600 rounded text-center font-bold text-slate-300 flex items-center justify-center transition-colors"
-                          title="左へ1%移動"
-                        >
-                          ◀
-                        </button>
-                        <input
-                          type="range"
-                          min="0"
-                          max={(100 - obiRect.width).toFixed(1)}
-                          step="0.1"
-                          value={obiRect.x}
-                          onChange={(e) => setObiRect(prev => ({ ...prev, x: parseFloat(e.target.value) }))}
-                          className="flex-1 accent-blue-500 h-1 bg-slate-850 rounded-lg appearance-none cursor-pointer"
-                        />
-                        <button
-                          onClick={() => adjustObiRect("x", 1)}
-                          className="w-7 h-7 bg-slate-800 hover:bg-slate-700 active:bg-blue-600 rounded text-center font-bold text-slate-300 flex items-center justify-center transition-colors"
-                          title="右へ1%移動"
-                        >
-                          ▶
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Width Size */}
-                    <div className="flex flex-col gap-1">
-                      <div className="flex justify-between items-center text-[11px]">
-                        <span className="text-slate-300 font-medium">📦 帯の横幅 (横幅割合)</span>
-                        <span className="font-mono text-slate-500 font-bold">{obiRect.width.toFixed(1)}%</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => adjustObiRect("width", -1)}
-                          className="w-7 h-7 bg-slate-800 hover:bg-slate-700 active:bg-blue-600 rounded text-center font-bold text-slate-300 flex items-center justify-center transition-colors"
-                          title="横幅を1%縮める"
-                        >
-                          －
-                        </button>
-                        <input
-                          type="range"
-                          min="1"
-                          max={(100 - obiRect.x).toFixed(1)}
-                          step="0.1"
-                          value={obiRect.width}
-                          onChange={(e) => setObiRect(prev => ({ ...prev, width: parseFloat(e.target.value) }))}
-                          className="flex-1 accent-indigo-500 h-1 bg-slate-850 rounded-lg appearance-none cursor-pointer"
-                        />
-                        <button
-                          onClick={() => adjustObiRect("width", 1)}
-                          className="w-7 h-7 bg-slate-800 hover:bg-slate-700 active:bg-blue-600 rounded text-center font-bold text-slate-300 flex items-center justify-center transition-colors"
-                          title="横幅を1%広げる"
+                          className="w-7 h-7 bg-white hover:bg-stone-100 active:bg-emerald-50 text-stone-850 rounded border border-stone-200 text-center font-bold flex items-center justify-center transition shadow-xs cursor-pointer"
+                          title="高さを1%広げる"
                         >
                           ＋
                         </button>
@@ -1224,36 +1181,64 @@ ${customPrompt ? `【特別な追加の指示】\nユーザーによるカスタ
                   </div>
 
                   {/* Micro Shift Keyboard-like helpers */}
-                  <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-800/80 items-center justify-between text-[11px]">
-                    <span className="text-slate-400">🔍 0.1%単位微調整（矢印ボタン or 各スライダー左右のボタンをご活用ください）</span>
-                    <div className="flex gap-1.5">
+                  <div className="flex flex-wrap gap-2 pt-2 border-t border-stone-200 items-center justify-between text-[11px]">
+                    <span className="text-stone-550 font-semibold text-[10px] sm:text-[11px]">🔍 0.1%単位微調整（各スライダーの横のボタンもご活用いただけます）</span>
+                    <div className="flex flex-wrap gap-1">
                       <button
                         onClick={() => adjustObiRect("y", -0.1)}
-                        className="px-2 py-1 bg-[#1e293b] hover:bg-blue-605 text-white rounded border border-slate-700 active:scale-95 text-[10px]"
+                        className="px-2 py-1 bg-white hover:bg-stone-100 text-stone-800 rounded border border-stone-200 active:scale-95 text-[10px] cursor-pointer shadow-xs font-bold"
                         title="上へ微小移動"
                       >
                         微上(▲)
                       </button>
                       <button
                         onClick={() => adjustObiRect("y", 0.1)}
-                        className="px-2 py-1 bg-[#1e293b] hover:bg-blue-605 text-white rounded border border-slate-700 active:scale-95 text-[10px]"
+                        className="px-2 py-1 bg-white hover:bg-stone-100 text-stone-800 rounded border border-stone-200 active:scale-95 text-[10px] cursor-pointer shadow-xs font-bold"
                         title="下へ微小移動"
                       >
                         微下(▼)
                       </button>
                       <button
                         onClick={() => adjustObiRect("height", -0.1)}
-                        className="px-2 py-1 bg-[#1e293b] hover:bg-indigo-605 text-white rounded border border-slate-700 active:scale-95 text-[10px]"
+                        className="px-2 py-1 bg-white hover:bg-stone-100 text-stone-800 rounded border border-stone-200 active:scale-95 text-[10px] cursor-pointer shadow-xs font-bold"
                         title="高さを微小縮小"
                       >
-                        高さ微縮(－)
+                        高微縮(－)
                       </button>
                       <button
                         onClick={() => adjustObiRect("height", 0.1)}
-                        className="px-2 py-1 bg-[#1e293b] hover:bg-indigo-605 text-white rounded border border-slate-700 active:scale-95 text-[10px]"
+                        className="px-2 py-1 bg-white hover:bg-stone-100 text-stone-800 rounded border border-stone-200 active:scale-95 text-[10px] cursor-pointer shadow-xs font-bold"
                         title="高さを微小拡大"
                       >
-                        高さ微伸(＋)
+                        高微伸(＋)
+                      </button>
+                      <button
+                        onClick={() => adjustObiRect("x", -0.1)}
+                        className="px-2 py-1 bg-white hover:bg-stone-100 text-stone-800 rounded border border-stone-200 active:scale-95 text-[10px] cursor-pointer shadow-xs font-bold"
+                        title="左へ微小移動"
+                      >
+                        微左(◀)
+                      </button>
+                      <button
+                        onClick={() => adjustObiRect("x", 0.1)}
+                        className="px-2 py-1 bg-white hover:bg-stone-100 text-stone-800 rounded border border-stone-200 active:scale-95 text-[10px] cursor-pointer shadow-xs font-bold"
+                        title="右へ微小移動"
+                      >
+                        微右(▶)
+                      </button>
+                      <button
+                        onClick={() => adjustObiRect("width", -0.1)}
+                        className="px-2 py-1 bg-white hover:bg-stone-100 text-stone-800 rounded border border-stone-200 active:scale-95 text-[10px] cursor-pointer shadow-xs font-bold"
+                        title="横幅を微小縮小"
+                      >
+                        幅微縮(－)
+                      </button>
+                      <button
+                        onClick={() => adjustObiRect("width", 0.1)}
+                        className="px-2 py-1 bg-white hover:bg-stone-100 text-stone-800 rounded border border-stone-200 active:scale-95 text-[10px] cursor-pointer shadow-xs font-bold"
+                        title="横幅を微小拡大"
+                      >
+                        幅微伸(＋)
                       </button>
                     </div>
                   </div>
@@ -1261,11 +1246,11 @@ ${customPrompt ? `【特別な追加の指示】\nユーザーによるカスタ
 
                 {/* Main Interactive Rnd Stage */}
                 <div 
-                  className="blueprint-grid rounded-xl border border-slate-700 p-2 bg-[#090d16] flex items-center justify-center overflow-auto max-h-[640px]"
+                  className="blueprint-grid rounded-xl border border-stone-250 p-3 bg-[#ebeae0]/40 flex items-center justify-center overflow-auto max-h-[900px] xl:max-h-[1000px] shadow-inner"
                 >
                   <div 
                     ref={previewContainerRef}
-                    className="relative max-w-full h-auto shadow-2xl overflow-hidden cursor-crosshair border border-slate-800"
+                    className="relative max-w-full h-auto shadow-md overflow-hidden cursor-crosshair border border-stone-200"
                     style={{ width: "100%", display: "inline-block" }}
                   >
                     {/* Raw flyer in back */}
@@ -1302,7 +1287,7 @@ ${customPrompt ? `【特別な追加の指示】\nユーザーによるカスタ
                             height: (ref.offsetHeight / containerSize.height) * 100
                           });
                         }}
-                        className="border-2 border-dashed border-blue-500 shadow-[0_0_0_9999px_rgba(15,23,42,0.45)] flex items-center justify-center overflow-hidden cursor-move group"
+                        className="border-2 border-emerald-600 bg-emerald-500/10 shadow-lg flex items-center justify-center overflow-hidden cursor-move group"
                         enableResizing={{
                           top: true, right: true, bottom: true, left: true,
                           topLeft: true, topRight: true, bottomLeft: true, bottomRight: true
@@ -1311,24 +1296,24 @@ ${customPrompt ? `【特別な追加の指示】\nユーザーによるカスタ
                         {obiMode === "eraser" ? (
                           <div className="w-full h-full bg-white flex flex-col items-center justify-center opacity-95">
                             <span className="text-[10px] font-bold text-slate-800 tracking-tight flex items-center gap-1">
-                              <Scissors className="w-3 h-3 text-red-500" /> Electronic Eraser (白塗り消去)
+                              <Scissors className="w-3 h-3 text-red-600" /> Electronic Eraser (白塗り消去)
                             </span>
                           </div>
                         ) : obiImg ? (
-                          <img src={obiImg} alt="Obi stamp" className="w-full h-full object-fill select-none" />
+                          <img src={obiImg} alt="Obi stamp" className="w-full h-full object-fill select-none pointer-events-none" />
                         ) : (
                           <div className="w-full h-full bg-white flex flex-col items-center justify-center">
-                            <span className="text-[9px] font-extrabold text-blue-600 text-center uppercase tracking-wider px-1 animate-pulse">
+                            <span className="text-[9px] font-extrabold text-emerald-800 text-center uppercase tracking-wider px-1">
                               ここに帯をスタンプ配置
                             </span>
                           </div>
                         )}
 
                         {/* Interactive Corners feedback */}
-                        <div className="absolute top-0 left-0 w-2 h-2 bg-blue-600 rounded-full -translate-x-1/2 -translate-y-1/2 group-hover:scale-125 transition-transform"></div>
-                        <div className="absolute top-0 right-0 w-2 h-2 bg-blue-600 rounded-full translate-x-1/2 -translate-y-1/2 group-hover:scale-125 transition-transform"></div>
-                        <div className="absolute bottom-0 left-0 w-2 h-2 bg-blue-600 rounded-full -translate-x-1/2 translate-y-1/2 group-hover:scale-125 transition-transform"></div>
-                        <div className="absolute bottom-0 right-0 w-2 h-2 bg-blue-600 rounded-full translate-x-1/2 translate-y-1/2 group-hover:scale-125 transition-transform"></div>
+                        <div className="absolute top-0 left-0 w-2 h-2 bg-emerald-700 rounded-full -translate-x-1/2 -translate-y-1/2 group-hover:scale-110 transition-transform"></div>
+                        <div className="absolute top-0 right-0 w-2 h-2 bg-emerald-700 rounded-full translate-x-1/2 -translate-y-1/2 group-hover:scale-110 transition-transform"></div>
+                        <div className="absolute bottom-0 left-0 w-2 h-2 bg-emerald-700 rounded-full -translate-x-1/2 translate-y-1/2 group-hover:scale-110 transition-transform"></div>
+                        <div className="absolute bottom-0 right-0 w-2 h-2 bg-emerald-700 rounded-full translate-x-1/2 translate-y-1/2 group-hover:scale-110 transition-transform"></div>
                       </Rnd>
                     )}
 
@@ -1336,85 +1321,111 @@ ${customPrompt ? `【特別な追加の指示】\nユーザーによるカスタ
                 </div>
 
                 {/* Action button to compile composition */}
-                <button 
-                  onClick={handleDownloadComposit}
-                  className="w-full font-bold text-sm bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white py-3.5 px-6 rounded-xl flex items-center justify-center gap-2 shadow-lg transition-all transform hover:-translate-y-0.5"
-                >
-                  <Download className="w-5 h-5" />
-                  帯替え済みの募集図面（画像を合成）をダウンロード
-                </button>
 
               </div>
             ) : (
-              <div className="flex-1 min-h-[300px] border-2 border-dashed border-slate-850 hover:border-slate-700 rounded-xl bg-[#090d16] flex flex-col items-center justify-center text-center p-8 transition-colors">
-                <div className="bg-[#1e293b]/50 p-4 rounded-full mb-4 border border-slate-800">
-                  <Upload className="w-8 h-8 text-slate-500" />
+              <div className="flex-1 min-h-[500px] border-2 border-dashed border-stone-250 hover:border-emerald-600 rounded-xl bg-stone-50/40 flex flex-col items-center justify-center text-center p-8 transition-colors">
+                <div className="bg-stone-100 p-4 rounded-full mb-4 border border-stone-200/80">
+                  <Upload className="w-8 h-8 text-stone-400" />
                 </div>
-                <h3 className="text-slate-300 font-bold mb-1 text-sm">マイソクがアップロードされていません</h3>
-                <p className="text-slate-500 text-xs max-w-sm mb-4">
+                <h3 className="text-slate-800 font-bold mb-1 text-sm">マイソクがアップロードされていません</h3>
+                <p className="text-stone-500 text-xs max-w-sm mb-4 leading-relaxed">
                   左上のボタンから物件の図面マイソク（PDFか画像）を選択すると、帯替え用編集キャンバスが自動的に展開されます。
                 </p>
               </div>
             )}
 
+            {/* Always Visible Professional Download Control Station */}
+            <div className="mt-6 pt-5 border-t border-stone-200/95 flex flex-col gap-4">
+              <h3 className="text-xs font-bold text-slate-900 flex items-center gap-1.5 px-1">
+                <Download className="w-4 h-4 text-emerald-800" />
+                💾 ダウンロード &amp; 出力オプション（いつでも保存可能）
+              </h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                
+                {/* Left Button: Download Composed Flyer */}
+                <div className="flex flex-col gap-2 p-3.5 rounded-xl border border-stone-200 bg-stone-50/60">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-800">1. 帯替え済みの募集図面（画像を合成）</span>
+                    {!flyerImg && (
+                      <span className="text-[9px] bg-amber-55 text-amber-900 border border-amber-200/60 px-1.5 py-0.5 rounded font-bold">図面未アップロード</span>
+                    )}
+                  </div>
+                  <p className="text-[10px] text-stone-500 leading-relaxed">
+                    アップロードした図面と作成した帯を重ね合わせて、一枚のきれいな募集図面（マイソク）を出力・保存します。
+                  </p>
+                  <button 
+                    onClick={handleDownloadComposit}
+                    className="w-full font-bold text-xs py-3 px-4 rounded-lg flex items-center justify-center gap-1.5 shadow-xs transition-all transform hover:-translate-y-0.5 cursor-pointer mt-auto bg-emerald-850 hover:bg-emerald-800 text-white"
+                  >
+                    <Download className={`w-4 h-4 ${flyerImg ? "animate-bounce" : ""}`} />
+                    帯替え済みの募集図面をダウンロード
+                  </button>
+                </div>
+
+                {/* Right Button: Download Obi Band Only at Super Resolution */}
+                <div className="flex flex-col gap-2 p-3.5 rounded-xl border border-stone-250 bg-emerald-50/25">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-emerald-950">2. 自社帯（帯のみ・高解像度）</span>
+                    <span className="text-[9px] bg-emerald-100 text-emerald-800 border border-emerald-250 px-1.5 py-0.5 rounded font-extrabold">高解像度PNG</span>
+                  </div>
+                  <p className="text-[10px] text-stone-500 leading-relaxed">
+                    他ソフト（Illustrator等）での編集や各種印刷に使える、最大3600px幅の超鮮明で高画質な帯画像です。
+                  </p>
+                  
+                  {/* Grid of resolution choices to choose from */}
+                  <div className="grid grid-cols-2 gap-2 mt-auto">
+                    <button
+                      onClick={() => handleDownloadObiOnly(1)}
+                      className="py-2 px-3 bg-white hover:bg-emerald-50 text-slate-800 hover:text-emerald-950 border border-stone-200 text-center font-bold text-[10.5px] rounded-lg shadow-2xs hover:border-emerald-300 transition cursor-pointer"
+                      title="標準印刷サイズ 1200×240px"
+                    >
+                      標準印字用 (1200px)
+                    </button>
+                    <button
+                      onClick={() => handleDownloadObiOnly(2)}
+                      className="py-2 px-3 bg-emerald-700 hover:bg-emerald-600 text-white text-center font-bold text-[10.5px] rounded-lg shadow-xs hover:shadow-md transition cursor-pointer"
+                      title="極美・高精彩 2400×480px"
+                    >
+                      ★ 2x 超高画質 (2400px)
+                    </button>
+                    <button
+                      onClick={() => handleDownloadObiOnly(3)}
+                      className="py-2 px-3 bg-slate-950 hover:bg-slate-800 text-white text-center font-bold text-[10.5px] rounded-lg shadow-xs hover:shadow-md transition cursor-pointer col-span-2"
+                      title="最大・看板印刷サイズ 3600×720px"
+                    >
+                      ポスター・看板級 3x (3600px)
+                    </button>
+                  </div>
+                </div>
+
+              </div>
+            </div>
           </div>
         </section>
 
-        {/* ==================== RIGHT COLUMN: AI COPYWRITER ==================== */}
-        <section className="bg-[#0f172a] rounded-2xl shadow-xl border border-slate-800 flex flex-col overflow-hidden animate-fade-in">
-          
-          <div className="p-5 border-b border-slate-800 bg-[#141d30] flex justify-between items-center">
-            <h2 className="text-base font-bold flex items-center gap-2 text-white">
-              <span className="flex items-center justify-center w-6 h-6 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20 text-xs font-mono font-bold">2</span>
-              AIによる物件分析 &amp; 多言語募集コピーの自動書き下ろし
-            </h2>
-          </div>
-
-          <div className="p-5 flex-1 flex flex-col gap-5">
-            
-            {/* Custom AI Directives / Hints */}
-            <div className="flex flex-col gap-2.5">
-              <div className="flex justify-between items-center">
-                <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
-                  <Sliders className="w-3.5 h-3.5 text-amber-400" />
-                  AIへの特別指示（オプション）
-                </label>
-                <span className="text-[10px] text-gray-500">省略時は標準の3ヶ国語（紹介、SNS）を生成</span>
+          {/* ==================== LEFT COLUMN: SPECIFICATION LIST & THREE-LANGUAGE COPYWRITING ==================== */}
+          <section className="bg-white rounded-2xl shadow-xs border border-stone-200/90 flex flex-col p-5 md:p-6 overflow-hidden animate-fade-in relative gap-5 lg:col-span-4 xl:col-span-3 lg:order-1">
+            <h2 className="text-base font-extrabold flex items-center justify-between pb-4 border-b border-stone-150 text-slate-900">
+              <div className="flex items-center gap-2">
+                <span className="flex items-center justify-center w-6 h-6 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200/60 text-xs font-mono font-bold">2</span>
+                3ヶ国語AI広告募集文案ジェネレーター
               </div>
-              
-              <textarea 
-                value={customPrompt}
-                onChange={(e) => setCustomPrompt(e.target.value)}
-                placeholder="例：ペット可能な点と敷金礼金ゼロを最大限目立たせて、絵文字を多めにして中国語で書いてほしい。 / 英語のみを10行程度で作成して。"
-                className="w-full p-3 bg-[#1e293b] border border-slate-700/85 hover:border-slate-600 focus:border-amber-500 rounded-xl text-xs text-white placeholder-slate-500 focus:ring-0 resize-none h-18 transition-all"
-              />
+              {isGenerating && (
+                <span className="text-[10px] bg-amber-50 text-amber-800 border border-amber-200/60 px-2.5 py-1 rounded-full animate-pulse font-bold flex items-center gap-1">
+                  <Loader2 className="w-3 h-3 animate-spin text-amber-800" />
+                  高度AI文案生成中...
+                </span>
+              )}
+            </h2>
 
-              {/* Fire AI analyze generator button */}
-              <button 
-                onClick={handleAnalyzeAndGenerateAI}
-                disabled={!flyerImg || isGenerating}
-                className="w-full text-sm font-extrabold bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 disabled:from-slate-800 disabled:to-slate-800 disabled:border-slate-700 disabled:text-slate-500 text-slate-950 py-3 px-5 rounded-xl flex items-center justify-center gap-2 shadow-lg transition-all transform hover:-translate-y-0.5 cursor-pointer"
-              >
-                {isGenerating ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin text-slate-950" />
-                    <span>不動産図面の画像を読み取って文案生成中 (約15〜20秒)...</span>
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-4 h-4 text-slate-950 fill-slate-950" />
-                    <span>図面から物件情報を解析し、募集コピーを生成（日・中・英）</span>
-                  </>
-                )}
-              </button>
-            </div>
-
-            {/* Split layout: Edit specs if generated, and display advertising texts */}
+            {/* If specs are loaded, render spec panel */}
             {specs && (
-              <div className="border border-slate-800 bg-[#090d16] rounded-xl p-4 flex flex-col gap-3">
-                <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-slate-200">
-                    <Building className="w-4 h-4 text-blue-400" />
+              <div className="border border-stone-200 bg-stone-50/30 rounded-xl p-4 flex flex-col gap-3 shadow-xs">
+                <div className="flex items-center justify-between border-b border-stone-200 pb-2.5">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-stone-900">
+                    <Building className="w-4 h-4 text-emerald-700" />
                     AIが抽出したスペック一覧
                   </div>
                   
@@ -1423,7 +1434,7 @@ ${customPrompt ? `【特別な追加の指示】\nユーザーによるカスタ
                       <button 
                         onClick={handleRegenerateFromDetails}
                         disabled={isRegenerating}
-                        className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-[10px] font-bold flex items-center gap-1 transition"
+                        className="px-2.5 py-1.5 bg-emerald-800 hover:bg-emerald-750 text-white rounded-lg text-[10px] font-bold flex items-center gap-1 transition-all cursor-pointer"
                       >
                         {isRegenerating ? (
                           <Loader2 className="w-3 h-3 animate-spin" />
@@ -1434,7 +1445,7 @@ ${customPrompt ? `【特別な追加の指示】\nユーザーによるカスタ
                       </button>
                       <button 
                         onClick={() => setIsEditingSpecs(false)}
-                        className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-400 rounded text-[10px] transition"
+                        className="px-2.5 py-1.5 bg-stone-200 hover:bg-stone-300 text-stone-800 rounded-lg text-[10px] font-bold transition-all cursor-pointer"
                       >
                         キャンセル
                       </button>
@@ -1442,7 +1453,7 @@ ${customPrompt ? `【特別な追加の指示】\nユーザーによるカスタ
                   ) : (
                     <button 
                       onClick={() => setIsEditingSpecs(true)}
-                      className="px-2.5 py-1 bg-blue-600 bg-opacity-20 hover:bg-opacity-30 text-blue-400 border border-blue-500/20 rounded text-[10px] font-bold transition"
+                      className="px-2.5 py-1 bg-white hover:bg-stone-100 text-slate-800 border border-stone-200 rounded-lg text-[10px] font-bold transition-all shadow-xs cursor-pointer"
                     >
                       手動微調整・再構成
                     </button>
@@ -1453,159 +1464,159 @@ ${customPrompt ? `【特別な追加の指示】\nユーザーによるカスタ
                   /* Specs Interactive Form Editor */
                   <div className="grid grid-cols-2 gap-2 text-xs">
                     <div className="col-span-2">
-                      <label className="text-[10px] text-slate-500 block">物件名</label>
+                      <label className="text-[10px] text-stone-550 font-bold block">物件名</label>
                       <input 
                         type="text" 
                         value={specs.propertyName}
                         onChange={(e) => setSpecs({ ...specs, propertyName: e.target.value })}
-                        className="w-full bg-[#1e293b] border border-slate-700 rounded p-1 text-white text-xs" 
+                        className="w-full bg-white border border-stone-200 rounded p-1.5 text-stone-900 text-xs focus:ring-1 focus:ring-emerald-800 focus:border-emerald-800 outline-none" 
                       />
                     </div>
                     <div>
-                      <label className="text-[10px] text-slate-500 block">賃料・家賃</label>
+                      <label className="text-[10px] text-stone-550 font-bold block">賃料・家賃</label>
                       <input 
                         type="text" 
                         value={specs.rent}
                         onChange={(e) => setSpecs({ ...specs, rent: e.target.value })}
-                        className="w-full bg-[#1e293b] border border-slate-700 rounded p-1 text-white text-xs" 
+                        className="w-full bg-white border border-stone-200 rounded p-1.5 text-stone-900 text-xs focus:ring-1 focus:ring-emerald-800 focus:border-emerald-800 outline-none" 
                       />
                     </div>
                     <div>
-                      <label className="text-[10px] text-slate-500 block">管理費・共益費</label>
+                      <label className="text-[10px] text-stone-550 font-bold block">管理費・共益費</label>
                       <input 
                         type="text" 
                         value={specs.managementFee}
                         onChange={(e) => setSpecs({ ...specs, managementFee: e.target.value })}
-                        className="w-full bg-[#1e293b] border border-slate-700 rounded p-1 text-white text-xs" 
+                        className="w-full bg-white border border-stone-200 rounded p-1.5 text-stone-900 text-xs focus:ring-1 focus:ring-emerald-800 focus:border-emerald-800 outline-none" 
                       />
                     </div>
                     <div>
-                      <label className="text-[10px] text-slate-500 block">敷金</label>
+                      <label className="text-[10px] text-stone-550 font-bold block">敷金</label>
                       <input 
                         type="text" 
                         value={specs.deposit}
                         onChange={(e) => setSpecs({ ...specs, deposit: e.target.value })}
-                        className="w-full bg-[#1e293b] border border-slate-700 rounded p-1 text-white text-xs" 
+                        className="w-full bg-white border border-stone-200 rounded p-1.5 text-stone-900 text-xs focus:ring-1 focus:ring-emerald-800 focus:border-emerald-800 outline-none" 
                       />
                     </div>
                     <div>
-                      <label className="text-[10px] text-slate-500 block">礼金</label>
+                      <label className="text-[10px] text-stone-550 font-bold block">礼金</label>
                       <input 
                         type="text" 
                         value={specs.keyMoney}
                         onChange={(e) => setSpecs({ ...specs, keyMoney: e.target.value })}
-                        className="w-full bg-[#1e293b] border border-slate-700 rounded p-1 text-white text-xs" 
+                        className="w-full bg-white border border-stone-200 rounded p-1.5 text-stone-900 text-xs focus:ring-1 focus:ring-emerald-800 focus:border-emerald-800 outline-none" 
                       />
                     </div>
                     <div>
-                      <label className="text-[10px] text-slate-500 block">間取り</label>
+                      <label className="text-[10px] text-stone-550 font-bold block">間取り</label>
                       <input 
                         type="text" 
                         value={specs.layout}
                         onChange={(e) => setSpecs({ ...specs, layout: e.target.value })}
-                        className="w-full bg-[#1e293b] border border-slate-700 rounded p-1 text-white text-xs" 
+                        className="w-full bg-white border border-stone-200 rounded p-1.5 text-stone-900 text-xs focus:ring-1 focus:ring-emerald-800 focus:border-emerald-800 outline-none" 
                       />
                     </div>
                     <div>
-                      <label className="text-[10px] text-slate-500 block">専有面積</label>
+                      <label className="text-[10px] text-stone-550 font-bold block">専有面積</label>
                       <input 
                         type="text" 
                         value={specs.size}
                         onChange={(e) => setSpecs({ ...specs, size: e.target.value })}
-                        className="w-full bg-[#1e293b] border border-slate-700 rounded p-1 text-white text-xs" 
+                        className="w-full bg-white border border-stone-200 rounded p-1.5 text-stone-900 text-xs focus:ring-1 focus:ring-emerald-800 focus:border-emerald-800 outline-none" 
                       />
                     </div>
                     <div className="col-span-2">
-                      <label className="text-[10px] text-slate-500 block">アクセス最寄り交通</label>
+                      <label className="text-[10px] text-stone-550 font-bold block">アクセス最寄り交通</label>
                       <input 
                         type="text" 
                         value={specs.stationWalkTime}
                         onChange={(e) => setSpecs({ ...specs, stationWalkTime: e.target.value })}
-                        className="w-full bg-[#1e293b] border border-slate-700 rounded p-1 text-white text-xs" 
+                        className="w-full bg-white border border-stone-200 rounded p-1.5 text-stone-900 text-xs focus:ring-1 focus:ring-emerald-800 focus:border-emerald-800 outline-none" 
                       />
                     </div>
                     <div>
-                      <label className="text-[10px] text-slate-500 block">物件所在地（大体の住所）</label>
+                      <label className="text-[10px] text-stone-550 font-bold block">物件所在地（大体の住所）</label>
                       <input 
                         type="text" 
                         value={specs.address}
                         onChange={(e) => setSpecs({ ...specs, address: e.target.value })}
-                        className="w-full bg-[#1e293b] border border-slate-700 rounded p-1 text-white text-xs" 
+                        className="w-full bg-white border border-stone-200 rounded p-1.5 text-stone-900 text-xs focus:ring-1 focus:ring-emerald-800 focus:border-emerald-800 outline-none" 
                       />
                     </div>
                     <div>
-                      <label className="text-[10px] text-slate-500 block">築年月</label>
+                      <label className="text-[10px] text-stone-550 font-bold block">築年月</label>
                       <input 
                         type="text" 
                         value={specs.constructionYear}
                         onChange={(e) => setSpecs({ ...specs, constructionYear: e.target.value })}
-                        className="w-full bg-[#1e293b] border border-slate-700 rounded p-1 text-white text-xs" 
+                        className="w-full bg-white border border-stone-200 rounded p-1.5 text-stone-900 text-xs focus:ring-1 focus:ring-emerald-800 focus:border-emerald-800 outline-none" 
                       />
                     </div>
 
                     <div className="col-span-2">
-                      <label className="text-[10px] text-slate-500 block mb-0.5">主要な設備特徴（最大8個。半角カンマで区切る）</label>
+                      <label className="text-[10px] text-stone-550 font-bold block mb-0.5">主要な設備特徴（最大8個。半角カンマで区切る）</label>
                       <input 
                         type="text" 
                         value={specs.keyFeatures.join(",")}
                         onChange={(e) => setSpecs({ ...specs, keyFeatures: e.target.value.split(",") })}
-                        className="w-full bg-[#1e293b] border border-slate-700 rounded p-1 text-white text-xs" 
+                        className="w-full bg-white border border-stone-200 rounded p-1.5 text-stone-900 text-xs focus:ring-1 focus:ring-emerald-800 focus:border-emerald-800 outline-none" 
                       />
                     </div>
                   </div>
                 ) : (
                   /* Plain Grid Display of specs if matching */
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
-                    <div className="col-span-2 bg-[#141d30] p-2 rounded-lg border border-slate-800">
-                      <span className="text-[10px] text-slate-500 block">物件名:</span>
-                      <span className="font-bold text-white text-[11px]">{specs.propertyName || "図面参照"}</span>
+                  <div className="grid grid-cols-2 gap-2.5 text-xs">
+                    <div className="col-span-2 bg-white p-2.5 rounded-lg border border-stone-200 shadow-xs">
+                      <span className="text-[10px] text-stone-500 font-bold block">物件名:</span>
+                      <span className="font-bold text-slate-850 text-[11px]">{specs.propertyName || "図面参照"}</span>
                     </div>
-                    <div className="bg-[#141d30] p-2 rounded-lg border border-slate-800">
-                      <span className="text-[10px] text-slate-500 block">賃料/家賃:</span>
-                      <span className="font-bold text-white">{specs.rent || "-"}</span>
+                    <div className="bg-white p-2.5 rounded-lg border border-stone-200 shadow-xs">
+                      <span className="text-[10px] text-stone-500 font-bold block">賃料/家賃:</span>
+                      <span className="font-bold text-slate-850">{specs.rent || "-"}</span>
                     </div>
-                    <div className="bg-[#141d30] p-2 rounded-lg border border-slate-800">
-                      <span className="text-[10px] text-slate-500 block">管理費/共益費:</span>
-                      <span className="font-bold text-white">{specs.managementFee || "-"}</span>
+                    <div className="bg-white p-2.5 rounded-lg border border-stone-200 shadow-xs">
+                      <span className="text-[10px] text-stone-500 font-bold block">管理費/共益費:</span>
+                      <span className="font-bold text-slate-850">{specs.managementFee || "-"}</span>
                     </div>
-                    <div className="bg-[#141d30] p-2 rounded-lg border border-slate-800">
-                      <span className="text-[10px] text-slate-500 block">敷金 / 礼金:</span>
-                      <span className="font-medium text-white">{specs.deposit || "-"} / {specs.keyMoney || "-"}</span>
+                    <div className="bg-white p-2.5 rounded-lg border border-stone-200 shadow-xs">
+                      <span className="text-[10px] text-stone-500 font-bold block">敷金 / 礼金:</span>
+                      <span className="font-medium text-slate-850">{specs.deposit || "-"} / {specs.keyMoney || "-"}</span>
                     </div>
-                    <div className="bg-[#141d30] p-2 rounded-lg border border-slate-800">
-                      <span className="text-[10px] text-slate-500 block">間取り:</span>
-                      <span className="font-bold text-amber-400">{specs.layout || "-"}</span>
+                    <div className="bg-white p-2.5 rounded-lg border border-stone-200 shadow-xs">
+                      <span className="text-[10px] text-stone-500 font-bold block">間取り:</span>
+                      <span className="font-bold text-emerald-800">{specs.layout || "-"}</span>
                     </div>
-                    <div className="bg-[#141d30] p-2 rounded-lg border border-slate-800">
-                      <span className="text-[10px] text-slate-500 block">専有面積:</span>
-                      <span className="font-medium text-white">{specs.size || "-"}</span>
+                    <div className="bg-white p-2.5 rounded-lg border border-stone-200 shadow-xs">
+                      <span className="text-[10px] text-stone-500 font-bold block">専有面積:</span>
+                      <span className="font-medium text-slate-850">{specs.size || "-"}</span>
                     </div>
-                    <div className="bg-[#141d30] p-2 rounded-lg border border-slate-800">
-                      <span className="text-[10px] text-slate-500 block">築年数:</span>
-                      <span className="font-medium text-white">{specs.constructionYear || "-"}</span>
+                    <div className="bg-white p-2.5 rounded-lg border border-stone-200 shadow-xs">
+                      <span className="text-[10px] text-stone-500 font-bold block">築年数:</span>
+                      <span className="font-medium text-slate-850">{specs.constructionYear || "-"}</span>
                     </div>
-                    <div className="col-span-2 bg-[#141d30] p-2 rounded-lg border border-slate-800">
-                      <span className="text-[10px] text-slate-500 block">交通アクセス:</span>
-                      <span className="font-medium text-white text-[11px] truncate block" title={specs.stationWalkTime}>
+                    <div className="col-span-2 bg-white p-2.5 rounded-lg border border-stone-250 shadow-xs">
+                      <span className="text-[10px] text-stone-500 font-bold block">交通アクセス:</span>
+                      <span className="font-medium text-slate-850 text-[11px] truncate block" title={specs.stationWalkTime}>
                         {specs.stationWalkTime || "-"}
                       </span>
                     </div>
-                    <div className="col-span-2 bg-[#141d30] p-2 rounded-lg border border-slate-800">
-                      <span className="text-[10px] text-slate-500 block">物件所在地:</span>
-                      <span className="font-medium text-white text-[11px] truncate block" title={specs.address}>
+                    <div className="col-span-2 bg-white p-2.5 rounded-lg border border-stone-250 shadow-xs">
+                      <span className="text-[10px] text-stone-500 font-bold block">物件所在地:</span>
+                      <span className="font-medium text-slate-850 text-[11px] truncate block" title={specs.address}>
                         {specs.address || "-"}
                       </span>
                     </div>
 
-                    <div className="col-span-2 md:col-span-4 bg-[#141d30] p-2 rounded-lg border border-slate-800 flex flex-wrap gap-1.5 items-center">
-                      <span className="text-[10px] text-slate-500">おすすめ設備：</span>
+                    <div className="col-span-2 bg-white p-2.5 rounded-lg border border-stone-200 shadow-xs flex flex-wrap gap-1.5 items-center">
+                      <span className="text-[10px] text-stone-500 font-bold animate-fade-in">おすすめ設備：</span>
                       {specs.keyFeatures.filter(Boolean).map((f, i) => (
-                        <span key={i} className="px-2 py-0.5 rounded bg-blue-900 bg-opacity-20 text-blue-400 border border-blue-800/20 text-[10px] font-medium">
+                        <span key={i} className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-100 text-[10px] font-bold">
                           {f.trim()}
                         </span>
                       ))}
                       {(!specs.keyFeatures || specs.keyFeatures.length === 0) && (
-                        <span className="text-[10px] text-slate-500">（なし）</span>
+                        <span className="text-[10px] text-stone-500">（なし）</span>
                       )}
                     </div>
                   </div>
@@ -1620,34 +1631,34 @@ ${customPrompt ? `【特別な追加の指示】\nユーザーによるカスタ
                 <div className="flex flex-col flex-1 gap-3.5">
                   
                   {/* Language Tab toggles */}
-                  <div className="flex justify-between items-center bg-[#141d30] border border-slate-800 rounded-xl p-1">
-                    <div className="flex gap-1 text-xs">
+                  <div className="flex flex-col sm:flex-row gap-2 justify-between items-stretch sm:items-center bg-stone-100/80 border border-stone-200 rounded-xl p-1.5 shadow-xs">
+                    <div className="flex flex-wrap gap-1 text-xs">
                       <button 
                         onClick={() => setActiveTab("japanese")}
-                        className={`px-4 py-2 rounded-lg font-bold transition-all ${
+                        className={`px-3.5 py-2 rounded-lg font-bold transition-all cursor-pointer ${
                           activeTab === "japanese" 
-                            ? "bg-slate-800 text-white" 
-                            : "text-slate-400 hover:text-white"
+                            ? "bg-white text-stone-900 border border-stone-350 shadow-xs scale-[1.02]" 
+                            : "text-stone-600 hover:text-stone-900"
                         }`}
                       >
                         🇯🇵 日本語ポータル用
                       </button>
                       <button 
                         onClick={() => setActiveTab("chinese")}
-                        className={`px-4 py-2 rounded-lg font-bold transition-all ${
+                        className={`px-3.5 py-2 rounded-lg font-bold transition-all cursor-pointer ${
                           activeTab === "chinese" 
-                            ? "bg-slate-800 text-white" 
-                            : "text-slate-400 hover:text-white"
+                            ? "bg-white text-stone-900 border border-stone-350 shadow-xs scale-[1.02]" 
+                            : "text-stone-600 hover:text-stone-900"
                         }`}
                       >
                         🇨🇳 中文 小紅書・微信
                       </button>
                       <button 
                         onClick={() => setActiveTab("english")}
-                        className={`px-4 py-2 rounded-lg font-bold transition-all ${
+                        className={`px-3.5 py-2 rounded-lg font-bold transition-all cursor-pointer ${
                           activeTab === "english" 
-                            ? "bg-slate-800 text-white" 
-                            : "text-slate-400 hover:text-white"
+                            ? "bg-white text-stone-900 border border-stone-350 shadow-xs scale-[1.02]" 
+                            : "text-stone-600 hover:text-stone-900"
                         }`}
                       >
                         🇺🇸 English Global
@@ -1660,28 +1671,28 @@ ${customPrompt ? `【特別な追加の指示】\nユーザーによるカスタ
                         const targetText = activeTab === "japanese" ? jpText : activeTab === "chinese" ? zhText : enText;
                         triggerCopyToClipboard(targetText, activeTab);
                       }}
-                      className="text-xs px-3.5 py-1.5 bg-blue-600 bg-opacity-15 hover:bg-opacity-25 border border-blue-500/30 hover:border-blue-500/50 text-blue-400 font-bold rounded-lg flex items-center gap-1.5 transition-all"
+                      className="text-xs px-3.5 py-2 bg-emerald-800 hover:bg-emerald-750 text-white font-bold rounded-lg flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer"
                     >
                       {copiedTab === activeTab ? (
                         <>
-                          <Check className="w-3.5 h-3.5 text-emerald-400" />
-                          <span className="text-emerald-400">コピー完了!</span>
+                          <Check className="w-3.5 h-3.5" />
+                          <span>コピー完了!</span>
                         </>
                       ) : (
                         <>
                           <Copy className="w-3.5 h-3.5" />
-                          <span>コピー</span>
+                          <span>クリップボードにコピー</span>
                         </>
                       )}
                     </button>
                   </div>
 
                   {/* Core Text output area */}
-                  <div className="flex-1 min-h-[300px] flex flex-col relative bg-[#090d16] rounded-xl border border-slate-800 overflow-hidden">
+                  <div className="flex-1 min-h-[300px] flex flex-col relative bg-[#faf9f6]/40 rounded-xl border border-stone-200 overflow-hidden shadow-xs">
                     <textarea 
                       readOnly
                       value={activeTab === "japanese" ? jpText : activeTab === "chinese" ? zhText : enText}
-                      className="w-full flex-1 p-4 bg-transparent border-none text-xs text-slate-200 focus:ring-0 leading-relaxed font-sans resize-none h-full outline-none"
+                      className="w-full flex-1 p-4 bg-transparent border-none text-stone-850 text-xs focus:ring-0 leading-relaxed font-sans resize-none h-full outline-none"
                       style={{ whiteSpace: "pre-wrap" }}
                       placeholder="募集文をここに生成します..."
                     />
@@ -1690,24 +1701,24 @@ ${customPrompt ? `【特別な追加の指示】\nユーザーによるカスタ
                 </div>
               ) : (
                 /* Static guidance info panel */
-                <div className="flex-1 flex flex-col items-center justify-center text-center p-8 bg-[#090d16] rounded-xl border border-cyan-950/20">
-                  <div className="bg-amber-900 border border-amber-500/20 bg-opacity-10 p-4 rounded-full mb-4 animate-bounce">
-                    <Sparkles className="w-8 h-8 text-amber-400" />
+                <div className="flex-1 flex flex-col items-center justify-center text-center p-8 bg-stone-50/40 rounded-xl border border-stone-250 shadow-xs">
+                  <div className="bg-emerald-50 border border-emerald-100 p-4 rounded-full mb-4 animate-bounce">
+                    <Sparkles className="w-8 h-8 text-emerald-800" />
                   </div>
-                  <h3 className="text-slate-200 font-bold mb-2 text-sm">3ヶ国語AIリアルタイム文案生成エンジン</h3>
-                  <p className="text-slate-500 text-xs max-w-sm leading-relaxed mb-4">
+                  <h3 className="text-stone-900 font-extrabold mb-2 text-sm">3ヶ国語AIリアルタイム文案生成エンジン</h3>
+                  <p className="text-stone-600 text-xs max-w-sm leading-relaxed mb-4">
                     元図面マイソクをアップロードした後、上記の「生成する」ボタンを押すと、AIが図面上のあらゆる日本語漢字・数字を高度OCR解析します。数秒で賃料・アクセスなどの正確なスペック情報を自動抽出し、国籍別に最適化されたマルチ広告文を書き上げます。
                   </p>
                   
                   {/* Quick features summary lists */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 w-full max-w-md text-[10px] text-slate-400 pt-3 border-t border-slate-900">
-                    <div className="p-2 bg-[#141d30] bg-opacity-40 rounded border border-slate-850">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 w-full max-w-md text-[10px] text-stone-600 pt-3 border-t border-stone-200">
+                    <div className="p-2.5 bg-white rounded-lg border border-stone-200 shadow-xs">
                       🔍 <b>日本語:</b> SUUMO/ポータル等向け。箇条書き付きで論理的。
                     </div>
-                    <div className="p-2 bg-[#141d30] bg-opacity-40 rounded border border-slate-850">
+                    <div className="p-2.5 bg-white rounded-lg border border-stone-200 shadow-xs">
                       🐼 <b>中文:</b> RED(小紅書)/朋友圈向け。絵文字と刺さるキーワード。
                     </div>
-                    <div className="p-2 bg-[#141d30] bg-opacity-40 rounded border border-slate-850">
+                    <div className="p-2.5 bg-white rounded-lg border border-stone-200 shadow-xs">
                       🌏 <b>英語:</b> インスタ、外国人向け。魅力的でプロ仕様。
                     </div>
                   </div>
@@ -1718,9 +1729,9 @@ ${customPrompt ? `【特別な追加の指示】\nユーザーによるカスタ
 
             {/* Generation History Sidebar */}
             {historyList.length > 0 && (
-              <div className="mt-2 bg-[#141d30] p-3.5 rounded-xl border border-slate-800">
-                <div className="text-xs font-bold text-slate-300 flex items-center gap-1.5 mb-2">
-                  <History className="w-3.5 h-3.5 text-blue-400" />
+              <div className="mt-2 bg-stone-50 p-3.5 rounded-xl border border-stone-200 shadow-xs">
+                <div className="text-xs font-bold text-stone-850 flex items-center gap-1.5 mb-2 font-sans">
+                  <History className="w-3.5 h-3.5 text-emerald-800" />
                   最近解析した物件の履歴（最大10件保持）
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -1728,9 +1739,9 @@ ${customPrompt ? `【特別な追加の指示】\nユーザーによるカスタ
                     <button 
                       key={item.id}
                       onClick={() => handleSelectHistoryItem(item)}
-                      className="px-3 py-1.5 text-[10px] font-medium bg-[#1e293b] hover:bg-slate-700 text-slate-200 rounded-lg border border-slate-750 transition flex items-center gap-1"
+                      className="px-3 py-1.5 text-[10px] font-bold bg-white hover:bg-stone-100 active:bg-stone-50 text-stone-800 rounded-lg border border-stone-200 transition-all flex items-center gap-1 shadow-xs cursor-pointer animate-fade-in"
                     >
-                      <Building className="w-3 h-3 text-emerald-400" />
+                      <Building className="w-3 h-3 text-emerald-700" />
                       {item.propertyName} ({item.timestamp})
                     </button>
                   ))}
@@ -1738,8 +1749,7 @@ ${customPrompt ? `【特別な追加の指示】\nユーザーによるカスタ
               </div>
             )}
 
-          </div>
-        </section>
+          </section>
 
       </main>
 

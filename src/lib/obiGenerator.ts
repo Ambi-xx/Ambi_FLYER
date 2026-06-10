@@ -4,11 +4,11 @@ import { ObiTextConfig } from "../types";
  * Renders a high-resolution professional real estate Obi (帯) banner on a canvas.
  * Returns a base64 encoded PNG string.
  */
-export function drawObiToCanvas(config: ObiTextConfig): string {
+export function drawObiToCanvas(config: ObiTextConfig, scale: number = 1): string {
   const canvas = document.createElement("canvas");
-  // Large scale 1200x240 for high print quality
-  canvas.width = 1200;
-  canvas.height = 240;
+  // Large scale 1200x240 * scale for high print quality
+  canvas.width = 1200 * scale;
+  canvas.height = 240 * scale;
   const ctx = canvas.getContext("2d")!;
 
   const bg = config.primaryColor;
@@ -21,10 +21,10 @@ export function drawObiToCanvas(config: ObiTextConfig): string {
   // Double thin borders
   if (config.showBorders) {
     ctx.strokeStyle = textColor;
-    ctx.lineWidth = 8;
-    ctx.strokeRect(10, 10, canvas.width - 20, canvas.height - 20);
-    ctx.lineWidth = 2;
-    ctx.strokeRect(18, 18, canvas.width - 36, canvas.height - 36);
+    ctx.lineWidth = 8 * scale;
+    ctx.strokeRect(10 * scale, 10 * scale, canvas.width - 20 * scale, canvas.height - 20 * scale);
+    ctx.lineWidth = 2 * scale;
+    ctx.strokeRect(18 * scale, 18 * scale, canvas.width - 36 * scale, canvas.height - 36 * scale);
   }
 
   // Primary font definition
@@ -34,100 +34,81 @@ export function drawObiToCanvas(config: ObiTextConfig): string {
   ctx.strokeStyle = textColor === "#FFFFFF" || textColor === "#FFFAF0" 
     ? "rgba(255,255,255,0.22)" 
     : "rgba(0,0,0,0.12)";
-  ctx.lineWidth = 1.5;
-  
-  // Left section divider at x=340
-  ctx.beginPath();
-  ctx.moveTo(340, 25);
-  ctx.lineTo(340, 215);
-  ctx.stroke();
+  ctx.lineWidth = 1.5 * scale;
 
-  // Right section divider at x=830
-  ctx.beginPath();
-  ctx.moveTo(830, 25);
-  ctx.lineTo(830, 215);
-  ctx.stroke();
-
-  // Draw Left Section (Tagline & License)
+  // Draw Row 1: Company Name (株式会社Ambitious) at the top, alone and elegant
   ctx.fillStyle = textColor;
-  ctx.font = `italic 600 15px ${fontSans}`;
-  ctx.fillText(config.tagline || "あなたの住まい探しをパートナーに", 40, 58);
-
-  ctx.font = `normal 500 13px ${fontSans}`;
-  ctx.fillText("【宅地建物取引業者免許】", 40, 102);
-
-  ctx.font = `bold 18px ${fontSans}`;
-  ctx.fillText(config.licenseNumber || "北海道知事石狩(1)第9451号", 40, 134);
-
-  // Split-split subtext
-  ctx.font = `normal 12px ${fontSans}`;
-  ctx.fillStyle = textColor === "#FFFFFF" || textColor === "#FFFAF0" ? "rgba(255,255,255,0.85)" : "rgba(0,0,0,0.7)";
-  ctx.fillText(`※取引態様：仲介 (手数料: ${config.commission || "3%+6万円（税別）"})`, 40, 185);
-
-  // Restore fillstyle
-  ctx.fillStyle = textColor;
-
-  // Draw Center Section (Company Name, Address, Website)
-  // Dynamic font sizing depending on company name length
   const compName = config.companyName || "株式会社Ambitious";
-  let compFontSize = 38;
-  if (compName.length > 15) compFontSize = 32;
-  if (compName.length > 22) compFontSize = 26;
+  ctx.font = `bold ${28 * scale}px ${fontSans}`;
+  ctx.fillText(compName, 50 * scale, 62 * scale);
 
-  ctx.font = `bold ${compFontSize}px ${fontSans}`;
-  ctx.fillText(compName, 370, 72);
-
-  ctx.font = `normal 13px ${fontSans}`;
-  ctx.fillStyle = textColor;
-  ctx.fillText(`${config.address || "〒063-0863 北海道札幌市西区八軒三条東４丁目１−１"}`, 370, 118);
-
-  // Small lines
-  ctx.font = `normal 13px ${fontSans}`;
-  ctx.fillText(`E-mail: ${config.email || "sun_sun@ambitious-jp.com"}`, 370, 158);
-  ctx.fillText(`URL: ${config.website || "https://ambitious-jp.com"}`, 370, 190);
-
-  // Draw Right Section (TEL/FAX and interactive contact CTA badge)
-  ctx.fillStyle = textColor;
-  ctx.font = `bold 13px ${fontSans}`;
-  ctx.fillText("＼ お気軽にお問い合わせください ／", 860, 50);
-
-  // Telephone - massive and chunky
-  ctx.font = `bold 28px ${fontSans}`;
-  ctx.fillText(`TEL ${config.phone || "011-600-6863"}`, 860, 94);
-
-  ctx.font = `bold 16px ${fontSans}`;
-  ctx.fillText(`FAX ${config.fax || "011-351-5312"}`, 860, 130);
-
-  if (config.contactPerson) {
-    ctx.font = `bold 14px ${fontSans}`;
-    ctx.fillText(`担当窓口：${config.contactPerson}`, 860, 164);
-  }
-
-  ctx.font = `normal 11px ${fontSans}`;
-  ctx.fillStyle = textColor === "#FFFFFF" || textColor === "#FFFAF0" ? "rgba(255,255,255,0.75)" : "rgba(0,0,0,0.6)";
-  ctx.fillText("営業時間 : 09:30 〜 18:30 (水曜定休)", 860, 196);
-
-  // Draw a decorative badge on the very right
-  ctx.fillStyle = textColor === "#FFFFFF" || textColor === "#FFFAF0"
-    ? "rgba(255,255,255,0.08)"
-    : "rgba(0,0,0,0.04)";
+  // Horizontal Sleek Divider Line under Row 1
   ctx.beginPath();
-  ctx.arc(1140, 180, 45, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.strokeStyle = textColor;
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.arc(1140, 180, 40, 0, Math.PI * 2);
+  ctx.moveTo(40 * scale, 82 * scale);
+  ctx.lineTo(1160 * scale, 82 * scale);
   ctx.stroke();
 
-  ctx.fillStyle = textColor;
-  ctx.font = `bold 10px ${fontSans}`;
-  ctx.textAlign = "center";
-  ctx.fillText("AMBITIOUS", 1140, 172);
-  ctx.font = `bold 11px ${fontSans}`;
-  ctx.fillText("安心取引", 1140, 192);
-  ctx.textAlign = "left"; // reset alignment
+  // Draw Column Dividers below the horizontal line
+  // Column 1 is wider (x=50 to 520) than Columns 2 & 3 to accommodate address
+  const div1X = 520 * scale;
+  const div2X = 860 * scale;
+
+  ctx.beginPath();
+  ctx.moveTo(div1X, 96 * scale);
+  ctx.lineTo(div1X, 212 * scale);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(div2X, 96 * scale);
+  ctx.lineTo(div2X, 212 * scale);
+  ctx.stroke();
+
+  // Common font for all column details - equal size as requested
+  const colFont = `600 ${13.5 * scale}px ${fontSans}`;
+  ctx.font = colFont;
+
+  // Line coordinates
+  const line1Y = 122 * scale;
+  const line2Y = 158 * scale;
+  const line3Y = 194 * scale;
+
+  // COLUMN 1: Address, Business Hours, License Identifier
+  // Line 1: Address
+  const fullAddress = config.address || "〒063-0863 北海道札幌市西区八軒三条東４丁目１−１";
+  ctx.fillText(fullAddress, 50 * scale, line1Y);
+
+  // Line 2: 営業時間
+  ctx.fillText("営業時間 ： 09:00 〜 17:00", 50 * scale, line2Y);
+
+  // Line 3: 北海道知事
+  const license = config.licenseNumber || "北海道知事石狩(1)第9451号";
+  ctx.fillText(license, 50 * scale, line3Y);
+
+  // COLUMN 2: TEL, FAX, Website URL
+  // Line 1: TEL
+  const phoneVal = config.phone || "011-600-6863";
+  ctx.fillText(`TEL ： ${phoneVal}`, div1X + 25 * scale, line1Y);
+
+  // Line 2: FAX
+  const faxVal = config.fax || "011-351-5312";
+  ctx.fillText(`FAX ： ${faxVal}`, div1X + 25 * scale, line2Y);
+
+  // Line 3: Website URL
+  const webVal = config.website || "https://ambitious-jp.com";
+  ctx.fillText(`URL ： ${webVal}`, div1X + 25 * scale, line3Y);
+
+  // COLUMN 3: Contact Person ("担当"), Email & Trade Aspect ("取引態様")
+  // Line 1: 担当
+  const contactVal = config.contactPerson || "孫 姍姍";
+  ctx.fillText(`担当 ： ${contactVal}`, div2X + 25 * scale, line1Y);
+
+  // Line 2: Email
+  const emailVal = config.email || "sun_sun@ambitious-jp.com";
+  ctx.fillText(`Email ： ${emailVal}`, div2X + 25 * scale, line2Y);
+
+  // Line 3: 取引態様 / Commission
+  const commVal = config.commission || "3%+6万円（税別）";
+  ctx.fillText(`取引態様 ： 仲介  (手数料 : ${commVal})`, div2X + 25 * scale, line3Y);
 
   return canvas.toDataURL("image/png");
 }
