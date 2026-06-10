@@ -1094,7 +1094,7 @@ ${customPrompt ? `【特別な追加の指示】\nユーザーによるカスタ
 
                 {/* Subtitle guidance */}
                 <div className="bg-emerald-50/50 border border-emerald-100 p-3 rounded-xl">
-                  <p className="text-[11px] text-emerald-900 leading-relaxed font-sans">
+                  <p className="text-[11px] text-emerald-950 leading-relaxed font-sans">
                     💡 <b>操作方法:</b> 下部のプレビュー上で緑の枠線（帯）を<b>直接ドラッグ＆リサイズ</b>するか、下記の<b>位置調整コントローラー (スライダー＆1クリック単位ボタン)</b> を使用して、隙間なく完璧に位置合わせを行えます。
                   </p>
                 </div>
@@ -1112,7 +1112,7 @@ ${customPrompt ? `【特別な追加の指示】\nユーザーによるカスタ
                   </div>
 
                   {/* 4 Multi-sliders for absolute silky movement */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 text-xs">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 text-xs">
                     {/* Y Position */}
                     <div className="flex flex-col gap-1">
                       <div className="flex justify-between items-center text-[11px]">
@@ -1146,6 +1146,39 @@ ${customPrompt ? `【特別な追加の指示】\nユーザーによるカスタ
                       </div>
                     </div>
 
+                    {/* X Position */}
+                    <div className="flex flex-col gap-1">
+                      <div className="flex justify-between items-center text-[11px]">
+                        <span className="text-slate-700 font-bold">↔️ 左右位置 (X座標)</span>
+                        <span className="font-mono text-stone-550 font-bold">{obiRect.x.toFixed(1)}%</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => adjustObiRect("x", -1)}
+                          className="w-7 h-7 bg-white hover:bg-stone-100 active:bg-emerald-50 text-stone-850 rounded border border-stone-200 text-center font-bold flex items-center justify-center transition shadow-xs cursor-pointer"
+                          title="左へ1%移動"
+                        >
+                          ◀
+                        </button>
+                        <input
+                          type="range"
+                          min="0"
+                          max={(100 - obiRect.width).toFixed(1)}
+                          step="0.1"
+                          value={obiRect.x}
+                          onChange={(e) => setObiRect(prev => ({ ...prev, x: parseFloat(e.target.value) }))}
+                          className="flex-1 accent-emerald-700 h-1 bg-stone-200 rounded-lg appearance-none cursor-pointer"
+                        />
+                        <button
+                          onClick={() => adjustObiRect("x", 1)}
+                          className="w-7 h-7 bg-white hover:bg-stone-100 active:bg-emerald-50 text-stone-850 rounded border border-stone-200 text-center font-bold flex items-center justify-center transition shadow-xs cursor-pointer"
+                          title="右へ1%移動"
+                        >
+                          ▶
+                        </button>
+                      </div>
+                    </div>
+
                     {/* Height Size */}
                     <div className="flex flex-col gap-1">
                       <div className="flex justify-between items-center text-[11px]">
@@ -1173,6 +1206,39 @@ ${customPrompt ? `【特別な追加の指示】\nユーザーによるカスタ
                           onClick={() => adjustObiRect("height", 1)}
                           className="w-7 h-7 bg-white hover:bg-stone-100 active:bg-emerald-50 text-stone-850 rounded border border-stone-200 text-center font-bold flex items-center justify-center transition shadow-xs cursor-pointer"
                           title="高さを1%広げる"
+                        >
+                          ＋
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Width Size */}
+                    <div className="flex flex-col gap-1">
+                      <div className="flex justify-between items-center text-[11px]">
+                        <span className="text-slate-700 font-bold">📐 帯の横幅 (横幅)</span>
+                        <span className="font-mono text-stone-550 font-bold">{obiRect.width.toFixed(1)}%</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => adjustObiRect("width", -1)}
+                          className="w-7 h-7 bg-white hover:bg-stone-100 active:bg-emerald-50 text-stone-850 rounded border border-stone-200 text-center font-bold flex items-center justify-center transition shadow-xs cursor-pointer"
+                          title="横幅を1%縮める"
+                        >
+                          －
+                        </button>
+                        <input
+                          type="range"
+                          min="1"
+                          max={(100 - obiRect.x).toFixed(1)}
+                          step="0.1"
+                          value={obiRect.width}
+                          onChange={(e) => setObiRect(prev => ({ ...prev, width: parseFloat(e.target.value) }))}
+                          className="flex-1 accent-emerald-700 h-1 bg-stone-200 rounded-lg appearance-none cursor-pointer"
+                        />
+                        <button
+                          onClick={() => adjustObiRect("width", 1)}
+                          className="w-7 h-7 bg-white hover:bg-stone-100 active:bg-emerald-50 text-stone-850 rounded border border-stone-200 text-center font-bold flex items-center justify-center transition shadow-xs cursor-pointer"
+                          title="横幅を1%広げる"
                         >
                           ＋
                         </button>
