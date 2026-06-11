@@ -743,7 +743,7 @@ ${customPrompt ? `【特別な追加の指示】\nユーザーによるカスタ
           
           {/* Logo Brand Brandings */}
           <div className="flex items-center gap-3">
-            <div className="bg-emerald-850 p-2.5 rounded-xl shadow-sm text-white">
+            <div className="bg-emerald-800 p-2.5 rounded-xl shadow-sm text-white animate-fade-in">
               <Scissors className="w-5 h-5 text-white" />
             </div>
             <div>
@@ -1423,7 +1423,7 @@ ${customPrompt ? `【特別な追加の指示】\nユーザーによるカスタ
                   </p>
                   <button 
                     onClick={handleDownloadComposit}
-                    className="w-full font-bold text-xs py-3 px-4 rounded-lg flex items-center justify-center gap-1.5 shadow-xs transition-all transform hover:-translate-y-0.5 cursor-pointer mt-auto bg-emerald-850 hover:bg-emerald-800 text-white"
+                    className="w-full font-bold text-xs py-3 px-4 rounded-lg flex items-center justify-center gap-1.5 shadow-sm transition-all transform hover:-translate-y-0.5 cursor-pointer mt-auto bg-emerald-800 hover:bg-emerald-700 text-white"
                   >
                     <Download className={`w-4 h-4 ${flyerImg ? "animate-bounce" : ""}`} />
                     帯替え済みの募集図面をダウンロード
